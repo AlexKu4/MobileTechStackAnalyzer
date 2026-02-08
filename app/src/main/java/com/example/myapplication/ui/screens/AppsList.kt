@@ -66,9 +66,6 @@ fun AppListScreen() {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier.windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top)
                 )
             )
         }
@@ -99,7 +96,7 @@ fun AppListScreen() {
                     ) {
                         Text(
                             text = errorMessage ?: "",
-                            color = MaterialTheme.colorScheme.onTertiary
+                            color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = {
@@ -132,7 +129,7 @@ fun AppListScreen() {
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = paddingValues
+                        contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
                         items(apps) { app ->
                             AppCard(
