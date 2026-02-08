@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Mobile TechStack</string>
+    <string name="loading_apps">Loading apps…</string>
+    <string name="no_apps_found">Apps not found</string>
+    <string name="error_loading">Error loading</string>
+    <string name="retry">Retry</string>
 </resources>
