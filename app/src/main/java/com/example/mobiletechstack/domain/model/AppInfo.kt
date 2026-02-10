@@ -1,4 +1,4 @@
-package com.example.myapplication.domain.model
+package com.example.mobiletechstack.domain.model
 
 import android.graphics.drawable.Drawable
 

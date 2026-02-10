@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screens
+package com.example.mobiletechstack.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,10 +9,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.domain.model.AppInfo
-import com.example.myapplication.ui.components.AppCard
-import com.example.myapplication.utils.formatSize
-import com.example.myapplication.utils.getInstalledApps
+import com.example.mobiletechstack.domain.model.AppInfo
+import com.example.mobiletechstack.ui.components.AppCard
+import com.example.mobiletechstack.utils.formatSize
+import com.example.mobiletechstack.utils.getInstalledApps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

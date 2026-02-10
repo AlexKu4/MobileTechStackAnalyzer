@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.mobiletechstack
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.myapplication.ui.screens.AppListScreen
-import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.mobiletechstack.ui.screens.AppListScreen
+import com.example.mobiletechstack.ui.theme.MyApplicationTheme
 
 
 class MainActivity : ComponentActivity() {

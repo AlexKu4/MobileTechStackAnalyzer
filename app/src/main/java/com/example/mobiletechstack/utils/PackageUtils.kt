@@ -1,8 +1,8 @@
-package com.example.myapplication.utils
+package com.example.mobiletechstack.utils
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import com.example.myapplication.domain.model.AppInfo
+import com.example.mobiletechstack.domain.model.AppInfo
 import java.io.File
 
 fun PackageManager.getInstalledApps(): List<AppInfo> {

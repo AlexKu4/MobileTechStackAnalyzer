@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.components
+package com.example.mobiletechstack.ui.components
 
 import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
