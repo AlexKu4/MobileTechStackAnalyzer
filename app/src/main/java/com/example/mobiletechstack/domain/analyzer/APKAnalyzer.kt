@@ -16,16 +16,16 @@ class APKAnalyzer(private val context: Context) {
 
         val nativeLibs = NativeLibraryAnalyzer.extractNativeLibraries(apkPath)
 
+        val framework = FrameworkDetector.detectFramework(apkPath, nativeLibs)
+
+        val language = FrameworkDetector.detectLanguage(apkPath)
+
         val appName = appInfo.loadLabel(packageManager).toString()
 
         val apkSize = File(apkPath).length()
 
         AnalysisResult(
-            packageName = packageName,
-            appName = appName,
-            nativeLibraries = nativeLibs,
-            apkPath = apkPath,
-            apkSize = apkSize
+            packageName, appName, nativeLibs, apkPath, apkSize, framework, language
         )
     }
 }

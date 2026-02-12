@@ -45,7 +45,7 @@ fun DetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Назад"
+                            contentDescription = "Back"
                         )
                     }
                 },
@@ -108,6 +108,8 @@ private fun DetailContent(result: AnalysisResult) {
     ) {
         item {
             SectionCard(title = "Tools:") {
+                InfoRow("Framework", result.framework)
+                InfoRow("Language", result.language)
                 InfoRow("Package", result.packageName)
                 InfoRow("APK size", result.apkSize.formatSize())
                 InfoRow("Path", result.apkPath)
