@@ -15,6 +15,11 @@ import com.example.mobiletechstack.ui.components.SectionCard
 import com.example.mobiletechstack.utils.formatSize
 
 
+private fun formatArchitecture(primaryAbi: String, is64Bit: Boolean): String {
+    val bitness = if (is64Bit) "64-bit" else "32-bit"
+    return "$primaryAbi ($bitness)"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
@@ -110,6 +115,7 @@ private fun DetailContent(result: AnalysisResult) {
             SectionCard(title = "Tools:") {
                 InfoRow("Framework", result.framework)
                 InfoRow("Language", result.language)
+                InfoRow("Architecture", formatArchitecture(result.primaryAbi, result.is64Bit))
                 InfoRow("Package", result.packageName)
                 InfoRow("APK size", result.apkSize.formatSize())
                 InfoRow("Path", result.apkPath)
