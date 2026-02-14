@@ -3,6 +3,7 @@ package com.example.mobiletechstack
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -31,6 +32,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.AppList) }
+
+    BackHandler(enabled = currentScreen is Screen.Detail) {
+        currentScreen = Screen.AppList
+    }
 
     when (val screen = currentScreen) {
         is Screen.AppList -> {
