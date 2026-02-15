@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.ui.components.SectionCard
+import com.example.mobiletechstack.domain.model.PermissionInfo
 import com.example.mobiletechstack.utils.formatSize
 
 
@@ -123,6 +126,26 @@ private fun DetailContent(result: AnalysisResult) {
         }
 
         item {
+            SectionCard(title = "Permissions (${result.permissions.size})") {
+                if (result.permissions.isEmpty()) {
+                    Text(
+                        text = "No permissions requested",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        result.permissions.forEach { permission ->
+                            PermissionItem(permission = permission)
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
             SectionCard(title = "Native libraries (${result.nativeLibraries.size})") {
                 if (result.nativeLibraries.isEmpty()) {
                     Text(
@@ -187,5 +210,43 @@ private fun InfoRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+private fun PermissionItem(permission: PermissionInfo) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = permission.name.substringAfterLast('.'),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = if (permission.granted) {
+                    Icons.Default.Check
+                } else {
+                    Icons.Default.Close
+                },
+                contentDescription = if (permission.granted) "Granted" else "Not granted",
+                modifier = Modifier.size(20.dp)
+            )
+
+            Text(
+                text = if (permission.granted) "Granted" else "Not granted",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }

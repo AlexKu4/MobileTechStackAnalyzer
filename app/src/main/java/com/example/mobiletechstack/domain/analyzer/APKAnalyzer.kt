@@ -9,6 +9,8 @@ import java.io.File
 
 class APKAnalyzer(private val context: Context) {
 
+    private val permissionAnalyzer = PermissionAnalyzer(context)
+
     suspend fun analyzeApp(packageName: String): AnalysisResult {
         return withContext(Dispatchers.IO) {
             val packageManager = context.packageManager
@@ -31,11 +33,14 @@ class APKAnalyzer(private val context: Context) {
 
             val apkSize = File(apkPath).length()
 
+            val permissions = permissionAnalyzer.extractPermissions(packageName)
+
+
             AnalysisResult(
                 packageName,
                 appName,
                 nativeLibs,
-                apkPath, apkSize, framework, language, primaryAbi, is64Bit, supportedAbis
+                apkPath, apkSize, framework, language, primaryAbi, is64Bit, supportedAbis, permissions
             )
         }
     }
