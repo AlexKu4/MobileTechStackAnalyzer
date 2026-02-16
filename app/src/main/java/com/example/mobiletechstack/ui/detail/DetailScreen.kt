@@ -10,11 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.ui.components.SectionCard
 import com.example.mobiletechstack.domain.model.PermissionInfo
+import com.example.mobiletechstack.domain.model.PermissionCategory
 import com.example.mobiletechstack.utils.formatSize
 
 
@@ -126,23 +128,7 @@ private fun DetailContent(result: AnalysisResult) {
         }
 
         item {
-            SectionCard(title = "Permissions (${result.permissions.size})") {
-                if (result.permissions.isEmpty()) {
-                    Text(
-                        text = "No permissions requested",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        result.permissions.forEach { permission ->
-                            PermissionItem(permission = permission)
-                        }
-                    }
-                }
-            }
+            PermissionsSection(permissions = result.permissions)
         }
 
         item {
@@ -210,6 +196,76 @@ private fun InfoRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+private fun PermissionsSection(permissions: List<PermissionInfo>) {
+    SectionCard(title = "Permissions (${permissions.size})") {
+        if (permissions.isEmpty()) {
+            Text(
+                text = "No permissions requested",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            val groupedPermissions = permissions.groupBy { it.category }
+
+            val sortedCategories = groupedPermissions.keys.sortedBy { it.displayName }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                sortedCategories.forEach { category ->
+                    val categoryPermissions = groupedPermissions[category] ?: emptyList()
+
+                    CategoryHeader(
+                        category = category,
+                        count = categoryPermissions.size
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        categoryPermissions.forEach { permission ->
+                            PermissionItem(permission = permission)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryHeader(
+    category: PermissionCategory,
+    count: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = category.displayName,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
     }
 }
 
