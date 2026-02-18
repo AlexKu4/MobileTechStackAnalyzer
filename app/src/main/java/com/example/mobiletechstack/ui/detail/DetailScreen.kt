@@ -2,6 +2,8 @@ package com.example.mobiletechstack.ui.detail
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -12,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.ui.components.SectionCard
@@ -179,28 +182,18 @@ private fun DetailContent(result: AnalysisResult) {
     }
 }
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
+enum class GrantedFilter {
+    ALL,
+    GRANTED,
+    NOT_GRANTED
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PermissionsSection(permissions: List<PermissionInfo>) {
+    var grantedFilter by remember { mutableStateOf(GrantedFilter.ALL) }
+
     SectionCard(title = "Permissions (${permissions.size})") {
         if (permissions.isEmpty()) {
             Text(
@@ -208,32 +201,108 @@ private fun PermissionsSection(permissions: List<PermissionInfo>) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        } else {
-            val groupedPermissions = permissions.groupBy { it.category }
+        } else Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            GrantedFilterRow(
+                selectedFilter = grantedFilter,
+                onFilterChange = { grantedFilter = it },
+                permissions = permissions
+            )
 
-            val sortedCategories = groupedPermissions.keys.sortedBy { it.displayName }
+            HorizontalDivider()
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                sortedCategories.forEach { category ->
-                    val categoryPermissions = groupedPermissions[category] ?: emptyList()
+            val filteredPermissions = when (grantedFilter) {
+                GrantedFilter.ALL -> {
+                    permissions
+                }
+                GrantedFilter.GRANTED -> {
+                    permissions.filter { it.granted }
+                }
+                GrantedFilter.NOT_GRANTED -> {
+                    permissions.filter { !it.granted }
+                }
+            }
 
-                    CategoryHeader(
-                        category = category,
-                        count = categoryPermissions.size
-                    )
+            if (filteredPermissions.isEmpty()) {
+                Text(
+                    text = "No permissions match the filter",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            } else {
+                val groupedPermissions = filteredPermissions.groupBy { it.category }
+                val sortedCategories = groupedPermissions.keys.sortedBy { it.displayName }
 
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        categoryPermissions.forEach { permission ->
-                            PermissionItem(permission = permission)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    sortedCategories.forEach { category ->
+                        val categoryPermissions = groupedPermissions[category] ?: emptyList()
+
+                        CategoryHeader(
+                            category = category,
+                            count = categoryPermissions.size
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            categoryPermissions.forEach { permission ->
+                                PermissionItem(permission = permission)
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GrantedFilterRow(
+    selectedFilter: GrantedFilter,
+    onFilterChange: (GrantedFilter) -> Unit,
+    permissions: List<PermissionInfo>
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Filter by status:",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            FilterChip(
+                selected = selectedFilter == GrantedFilter.ALL,
+                onClick = { onFilterChange(GrantedFilter.ALL) },
+                label = { Text("All (${permissions.size})") }
+            )
+
+            val grantedCount = permissions.count { it.granted }
+            FilterChip(
+                selected = selectedFilter == GrantedFilter.GRANTED,
+                onClick = { onFilterChange(GrantedFilter.GRANTED) },
+                label = { Text("Granted ($grantedCount)") }
+            )
+
+            val notGrantedCount = permissions.count { !it.granted }
+            FilterChip(
+                selected = selectedFilter == GrantedFilter.NOT_GRANTED,
+                onClick = { onFilterChange(GrantedFilter.NOT_GRANTED) },
+                label = { Text("Not Granted ($notGrantedCount)") }
+            )
         }
     }
 }
@@ -289,20 +358,43 @@ private fun PermissionItem(permission: PermissionInfo) {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
-                imageVector = if (permission.granted) {
-                    Icons.Default.Check
-                } else {
-                    Icons.Default.Close
-                },
+                imageVector = if (permission.granted) Icons.Default.Check else Icons.Default.Close,
                 contentDescription = if (permission.granted) "Granted" else "Not granted",
+                tint = if (permission.granted)
+                    Color(0xFF4CAF50)
+                else
+                    Color(0xFF9E9E9E),
                 modifier = Modifier.size(20.dp)
             )
 
             Text(
                 text = if (permission.granted) "Granted" else "Not granted",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (permission.granted)
+                    Color(0xFF4CAF50)
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
