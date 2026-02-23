@@ -11,5 +11,7 @@ data class AnalysisResult(
     val primaryAbi: String,
     val is64Bit: Boolean,
     val supportedAbis: List<String>,
-    val permissions: List<PermissionInfo> = emptyList()
+    val permissions: List<PermissionInfo> = emptyList(),
+    val versionInfo: AppVersionInfo? = null,
+    val securityFlags: SecurityFlags? = null
 )
