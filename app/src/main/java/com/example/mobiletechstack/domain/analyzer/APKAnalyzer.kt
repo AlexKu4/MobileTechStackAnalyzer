@@ -10,12 +10,14 @@ import java.io.File
 class APKAnalyzer(private val context: Context) {
 
     private val permissionAnalyzer = PermissionAnalyzer(context)
+    private val manifestAnalyzer = ManifestAnalyzer(context)
 
     suspend fun analyzeApp(packageName: String): AnalysisResult {
         return withContext(Dispatchers.IO) {
             val packageManager = context.packageManager
             val appInfo = packageManager.getApplicationInfo(packageName, 0)
             val apkPath = appInfo.sourceDir
+
 
             val nativeLibs = NativeLibraryAnalyzer.extractNativeLibraries(apkPath)
 
@@ -35,12 +37,14 @@ class APKAnalyzer(private val context: Context) {
 
             val permissions = permissionAnalyzer.extractPermissions(packageName)
 
+            val versionInfo = manifestAnalyzer.extractVersionInfo(packageName)
+            val securityFlags = manifestAnalyzer.extractSecurityFlags(packageName)
 
             AnalysisResult(
                 packageName,
                 appName,
                 nativeLibs,
-                apkPath, apkSize, framework, language, primaryAbi, is64Bit, supportedAbis, permissions
+                apkPath, apkSize, framework, language, primaryAbi, is64Bit, supportedAbis, permissions, versionInfo, securityFlags
             )
         }
     }
