@@ -11,13 +11,13 @@ class APKAnalyzer(private val context: Context) {
 
     private val permissionAnalyzer = PermissionAnalyzer(context)
     private val manifestAnalyzer = ManifestAnalyzer(context)
+    private val dexAnalyzer = DexAnalyzer(context)
 
     suspend fun analyzeApp(packageName: String): AnalysisResult {
         return withContext(Dispatchers.IO) {
             val packageManager = context.packageManager
             val appInfo = packageManager.getApplicationInfo(packageName, 0)
             val apkPath = appInfo.sourceDir
-
 
             val nativeLibs = NativeLibraryAnalyzer.extractNativeLibraries(apkPath)
 
@@ -40,11 +40,23 @@ class APKAnalyzer(private val context: Context) {
             val versionInfo = manifestAnalyzer.extractVersionInfo(packageName)
             val securityFlags = manifestAnalyzer.extractSecurityFlags(packageName)
 
+            val detectedLibraries = dexAnalyzer.detectAnalyticsLibraries(apkPath)
+
             AnalysisResult(
                 packageName,
                 appName,
                 nativeLibs,
-                apkPath, apkSize, framework, language, primaryAbi, is64Bit, supportedAbis, permissions, versionInfo, securityFlags
+                apkPath,
+                apkSize,
+                framework,
+                language,
+                primaryAbi,
+                is64Bit,
+                supportedAbis,
+                permissions,
+                versionInfo,
+                securityFlags,
+                detectedLibraries
             )
         }
     }

@@ -13,5 +13,6 @@ data class AnalysisResult(
     val supportedAbis: List<String>,
     val permissions: List<PermissionInfo> = emptyList(),
     val versionInfo: AppVersionInfo? = null,
-    val securityFlags: SecurityFlags? = null
+    val securityFlags: SecurityFlags? = null,
+    val detectedLibraries: List<DetectedLibrary> = emptyList()
 )

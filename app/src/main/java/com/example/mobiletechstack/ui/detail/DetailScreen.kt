@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.domain.model.AppVersionInfo
+import com.example.mobiletechstack.domain.model.DetectedLibrary
+import com.example.mobiletechstack.domain.model.LibraryCategory
 import com.example.mobiletechstack.domain.model.PermissionCategory
 import com.example.mobiletechstack.domain.model.PermissionInfo
 import com.example.mobiletechstack.domain.model.SecurityFlags
@@ -134,6 +136,10 @@ private fun DetailContent(result: AnalysisResult) {
         }
 
         item {
+            OutsideLibrariesSection(libraries = result.detectedLibraries)
+        }
+
+        item {
             SectionCard(title = "Tools:") {
                 InfoRow("Framework", result.framework)
                 InfoRow("Language", result.language)
@@ -193,6 +199,96 @@ private fun DetailContent(result: AnalysisResult) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun OutsideLibrariesSection(libraries: List<DetectedLibrary>) {
+    SectionCard(title = "Outside Libraries") {
+        if (libraries.isEmpty()) {
+            Text(
+                text = "No outside libraries detected",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val groupedLibraries = libraries.groupBy { it.category }
+
+                groupedLibraries.forEach { (category, libs) ->
+                    LibraryCategorySection(
+                        category = category,
+                        libraries = libs
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryCategorySection(
+    category: LibraryCategory,
+    libraries: List<DetectedLibrary>
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = category.displayName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Text(
+                    text = libraries.size.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(start = 8.dp)
+        ) {
+            libraries.forEach { library ->
+                LibraryItem(library = library)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryItem(library: DetectedLibrary) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = library.name,
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Text(
+            text = library.packageName,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
