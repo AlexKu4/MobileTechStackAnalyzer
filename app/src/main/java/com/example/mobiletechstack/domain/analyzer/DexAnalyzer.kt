@@ -51,10 +51,61 @@ class DexAnalyzer(private val context: Context) {
         "com.localytics.android" to "Localytics",
 
         // Segment
-        "com.segment.analytics" to "Segment"
+        "com.segment.analytics" to "Segment",
+
+        // Countly
+        "ly.count.android.sdk" to "Countly",
+
+        // Kochava
+        "com.kochava.base" to "Kochava"
     )
 
-    suspend fun detectAnalyticsLibraries(apkPath: String): List<DetectedLibrary> = withContext(Dispatchers.IO) {
+    private val advertisingPatterns = mapOf(
+        // Google
+        "com.google.android.gms.ads" to "Google AdMob",
+        "com.google.ads.mediation" to "Google Ad Mediation",
+
+        // Facebook
+        "com.facebook.ads" to "Facebook Audience Network",
+
+        // Unity
+        "com.unity3d.ads" to "Unity Ads",
+
+        // AppLovin
+        "com.applovin" to "AppLovin",
+
+        // MoPub
+        "com.mopub" to "MoPub",
+
+        // IronSource
+        "com.ironsource" to "IronSource",
+
+        // Chartboost
+        "com.chartboost.sdk" to "Chartboost",
+
+        // AdColony
+        "com.adcolony.sdk" to "AdColony",
+
+        // Vungle
+        "com.vungle" to "Vungle",
+
+        // InMobi
+        "com.inmobi" to "InMobi",
+
+        // StartApp
+        "com.startapp.android" to "StartApp",
+
+        // Tapjoy
+        "com.tapjoy" to "Tapjoy",
+
+        // Pangle (TikTok)
+        "com.bytedance.sdk.openadsdk" to "Pangle (TikTok Ads)",
+
+        // Fyber
+        "com.fyber" to "Fyber"
+    )
+
+    suspend fun detectLibraries(apkPath: String): List<DetectedLibrary> = withContext(Dispatchers.IO) {
         try {
             val detectedLibraries = mutableSetOf<DetectedLibrary>()
 
@@ -105,9 +156,9 @@ class DexAnalyzer(private val context: Context) {
 
             dex.classes.forEach { classDef ->
                 val className = classDef.type
-                    .removePrefix("L")
-                    .removeSuffix(";")
-                    .replace('/', '.')
+                    .removePrefix("L")  // Убираем "L" в начале
+                    .removeSuffix(";")  // Убираем ";" в конце
+                    .replace('/', '.')  // Заменяем "/" на "."
 
                 analyticsPatterns.forEach { (pattern, libraryName) ->
                     if (className.startsWith(pattern)) {
@@ -120,12 +171,28 @@ class DexAnalyzer(private val context: Context) {
                         )
                     }
                 }
+
+                advertisingPatterns.forEach { (pattern, libraryName) ->
+                    if (className.startsWith(pattern)) {
+                        detectedLibraries.add(
+                            DetectedLibrary(
+                                name = libraryName,
+                                packageName = pattern,
+                                category = LibraryCategory.ADVERTISING
+                            )
+                        )
+                    }
+                }
             }
 
         } catch (e: Exception) {
-            // ignore exception
+            //ignore exception
         }
 
         return detectedLibraries.toList()
+    }
+
+    suspend fun detectAnalyticsLibraries(apkPath: String): List<DetectedLibrary> {
+        return detectLibraries(apkPath)
     }
 }

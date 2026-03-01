@@ -40,7 +40,7 @@ class APKAnalyzer(private val context: Context) {
             val versionInfo = manifestAnalyzer.extractVersionInfo(packageName)
             val securityFlags = manifestAnalyzer.extractSecurityFlags(packageName)
 
-            val detectedLibraries = dexAnalyzer.detectAnalyticsLibraries(apkPath)
+            val detectedLibraries = dexAnalyzer.detectLibraries(apkPath)
 
             AnalysisResult(
                 packageName,
