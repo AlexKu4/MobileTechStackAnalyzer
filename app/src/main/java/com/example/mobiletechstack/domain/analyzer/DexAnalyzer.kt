@@ -105,6 +105,81 @@ class DexAnalyzer(private val context: Context) {
         "com.fyber" to "Fyber"
     )
 
+    private val socialPatterns = mapOf(
+        // Facebook
+        "com.facebook.login" to "Facebook Login",
+        "com.facebook.share" to "Facebook Share",
+
+        // Google
+        "com.google.android.gms.auth" to "Google Sign-In",
+
+        // Twitter
+        "com.twitter.sdk" to "Twitter SDK",
+        "twitter4j" to "Twitter4J",
+
+        // LinkedIn
+        "com.linkedin.platform" to "LinkedIn SDK",
+
+        // Instagram
+        "com.instagram.common" to "Instagram SDK",
+
+        // VK (VKontakte)
+        "com.vk.sdk" to "VK SDK",
+
+        // WeChat
+        "com.tencent.mm.opensdk" to "WeChat SDK",
+
+        // Line
+        "com.linecorp" to "Line SDK",
+
+        // Telegram
+        "org.telegram" to "Telegram SDK",
+
+        // Pinterest
+        "com.pinterest" to "Pinterest SDK",
+
+        // Snapchat
+        "com.snapchat.kit.sdk" to "Snapchat SDK",
+
+        // TikTok
+        "com.bytedance.ies.ugc.aweme" to "TikTok SDK"
+    )
+
+    /**
+     * База паттернов для Payment SDKs
+     */
+    private val paymentPatterns = mapOf(
+        // Stripe
+        "com.stripe.android" to "Stripe",
+
+        // PayPal
+        "com.paypal.android" to "PayPal",
+
+        // Google Pay
+        "com.google.android.gms.wallet" to "Google Pay",
+
+        // Braintree
+        "com.braintreepayments" to "Braintree",
+
+        // Square
+        "com.squareup.sdk" to "Square",
+
+        // Razorpay
+        "com.razorpay" to "Razorpay",
+
+        // Paytm
+        "com.paytm" to "Paytm",
+
+        // PayU
+        "com.payu" to "PayU",
+
+        // Adyen
+        "com.adyen" to "Adyen",
+
+        // Klarna
+        "com.klarna" to "Klarna"
+    )
+
     suspend fun detectLibraries(apkPath: String): List<DetectedLibrary> = withContext(Dispatchers.IO) {
         try {
             val detectedLibraries = mutableSetOf<DetectedLibrary>()
@@ -160,36 +235,36 @@ class DexAnalyzer(private val context: Context) {
                     .removeSuffix(";")  // Убираем ";" в конце
                     .replace('/', '.')  // Заменяем "/" на "."
 
-                analyticsPatterns.forEach { (pattern, libraryName) ->
-                    if (className.startsWith(pattern)) {
-                        detectedLibraries.add(
-                            DetectedLibrary(
-                                name = libraryName,
-                                packageName = pattern,
-                                category = LibraryCategory.ANALYTICS
-                            )
-                        )
-                    }
-                }
-
-                advertisingPatterns.forEach { (pattern, libraryName) ->
-                    if (className.startsWith(pattern)) {
-                        detectedLibraries.add(
-                            DetectedLibrary(
-                                name = libraryName,
-                                packageName = pattern,
-                                category = LibraryCategory.ADVERTISING
-                            )
-                        )
-                    }
-                }
+                checkPattern(className, analyticsPatterns, LibraryCategory.ANALYTICS, detectedLibraries)
+                checkPattern(className, advertisingPatterns, LibraryCategory.ADVERTISING, detectedLibraries)
+                checkPattern(className, socialPatterns, LibraryCategory.SOCIAL, detectedLibraries)
+                checkPattern(className, paymentPatterns, LibraryCategory.PAYMENT, detectedLibraries)
             }
 
         } catch (e: Exception) {
-            //ignore exception
+            //ignore
         }
 
         return detectedLibraries.toList()
+    }
+
+    private fun checkPattern(
+        className: String,
+        patterns: Map<String, String>,
+        category: LibraryCategory,
+        result: MutableSet<DetectedLibrary>
+    ) {
+        patterns.forEach { (pattern, libraryName) ->
+            if (className.startsWith(pattern)) {
+                result.add(
+                    DetectedLibrary(
+                        name = libraryName,
+                        packageName = pattern,
+                        category = category
+                    )
+                )
+            }
+        }
     }
 
     suspend fun detectAnalyticsLibraries(apkPath: String): List<DetectedLibrary> {
