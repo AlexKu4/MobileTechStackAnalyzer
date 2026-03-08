@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.domain.model.AppVersionInfo
 import com.example.mobiletechstack.domain.model.DetectedLibrary
+import com.example.mobiletechstack.domain.model.FrameworkInfo
 import com.example.mobiletechstack.domain.model.LibraryCategory
 import com.example.mobiletechstack.domain.model.PermissionCategory
 import com.example.mobiletechstack.domain.model.PermissionInfo
@@ -132,6 +133,12 @@ private fun DetailContent(result: AnalysisResult) {
         item {
             result.securityFlags?.let { securityFlags ->
                 SecurityFlagsSection(securityFlags = securityFlags)
+            }
+        }
+
+        item {
+            result.frameworkInfo?.let { frameworkInfo ->
+                FrameworkInfoSection(frameworkInfo = frameworkInfo)
             }
         }
 
@@ -387,6 +394,13 @@ private fun SecurityFlagRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp)
         )
+    }
+}
+
+@Composable
+private fun FrameworkInfoSection(frameworkInfo: FrameworkInfo) {
+    SectionCard(title = "Framework Analysis") {
+        InfoRow("Type", frameworkInfo.type.displayName)
     }
 }
 

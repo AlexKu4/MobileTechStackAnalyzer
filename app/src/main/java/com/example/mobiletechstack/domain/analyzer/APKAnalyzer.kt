@@ -21,7 +21,8 @@ class APKAnalyzer(private val context: Context) {
 
             val nativeLibs = NativeLibraryAnalyzer.extractNativeLibraries(apkPath)
 
-            val framework = FrameworkDetector.detectFramework(apkPath, nativeLibs)
+            val frameworkInfo = FrameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs)
+            val framework = frameworkInfo.type.displayName
 
             val language = FrameworkDetector.detectLanguage(apkPath)
 
@@ -56,7 +57,8 @@ class APKAnalyzer(private val context: Context) {
                 permissions,
                 versionInfo,
                 securityFlags,
-                detectedLibraries
+                detectedLibraries,
+                frameworkInfo
             )
         }
     }

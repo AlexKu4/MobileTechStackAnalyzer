@@ -2,164 +2,153 @@ package com.example.mobiletechstack.domain.analyzer
 
 import com.example.mobiletechstack.domain.model.LibraryInfo
 import java.util.zip.ZipFile
+import com.example.mobiletechstack.domain.model.FrameworkInfo
+import com.example.mobiletechstack.domain.model.FrameworkType
+
 
 object FrameworkDetector {
 
-    fun detectFramework(apkPath: String, libraries: List<LibraryInfo>): String {
-        val libNames = libraries.map { it.name.lowercase() }
+    fun detectFrameworkDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): FrameworkInfo {
 
-        // Flutter
-        if (libNames.any { it.contains("libflutter.so") }) {
-            return "Flutter"
+        if (isFlutter(apkPath)) {
+            return FrameworkInfo(type = FrameworkType.FLUTTER)
         }
 
-        // React Native
-        if (libNames.any { it.contains("libreactnative") || it.contains("libhermes") }) {
-            return "React Native"
+        if (isReactNative(apkPath)) {
+            return FrameworkInfo(type = FrameworkType.REACT_NATIVE)
         }
 
-        // Unity
-        if (libNames.any { it.contains("libunity.so") } ||
-            libNames.any { it.contains("libil2cpp.so") }) {
-            return "Unity"
+        if (isXamarin(apkPath, nativeLibs)) {
+            return FrameworkInfo(type = FrameworkType.XAMARIN)
         }
 
-        // Xamarin
-        if (libNames.any { it.contains("libmonodroid") || it.contains("libmonosgen") }) {
-            return "Xamarin"
+        if (isUnity(apkPath, nativeLibs)) {
+            return FrameworkInfo(type = FrameworkType.UNITY)
         }
 
-        // Cocos2d
-        if (libNames.any { it.contains("libcocos2d") }) {
-            return "Cocos2d"
+        if (isCordova(apkPath)) {
+            val type = if (isIonic(apkPath)) {
+                FrameworkType.IONIC
+            } else {
+                FrameworkType.CORDOVA
+            }
+            return FrameworkInfo(type = type)
         }
 
-        // Godot
-        if (libNames.any { it.contains("libgodot") }) {
-            return "Godot"
+         if (isKotlinMultiplatform(nativeLibs)) {
+            return FrameworkInfo(type = FrameworkType.KOTLIN_MULTIPLATFORM)
         }
 
-        // Unreal Engine
-        if (libNames.any { it.contains("libue4") || it.contains("libunreal") }) {
-            return "Unreal Engine"
+        if (isNativeScript(apkPath)) {
+            return FrameworkInfo(type = FrameworkType.NATIVE_SCRIPT)
         }
 
-        val assetsInfo = analyzeApkStructure(apkPath)
+        return FrameworkInfo(type = FrameworkType.NATIVE_ANDROID)
+    }
 
-        // Flutter
-        if (assetsInfo.hasFlutterAssets) {
-            return "Flutter"
-        }
+    private fun isFlutter(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
 
-        // React Native
-        if (assetsInfo.hasReactNativeBundle) {
-            return "React Native"
-        }
-
-        // Cordova/Ionic
-        if (assetsInfo.hasCordova) {
-            return "Cordova/Ionic"
-        }
-
-        // Unity
-        if (assetsInfo.hasUnityAssets) {
-            return "Unity"
-        }
-
-        // Xamarin
-        if (assetsInfo.hasXamarinAssemblies) {
-            return "Xamarin"
-        }
-
-        // Определяем Native Android (Kotlin vs Java)
-        val usesKotlin = detectKotlin(apkPath)
-
-        return if (usesKotlin) {
-            "Native Android (Kotlin)"
-        } else {
-            "Native Android (Java)"
+            return entries.any { it.name.startsWith("flutter_assets/") } ||
+                    entries.any { it.name.contains("libflutter.so") }
         }
     }
 
-     private fun analyzeApkStructure(apkPath: String): ApkStructureInfo {
-        try {
-            ZipFile(apkPath).use { zipFile ->
-                val entries = zipFile.entries().asSequence()
-                    .map { it.name }
-                    .toList()
+    private fun isReactNative(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
 
-                return ApkStructureInfo(
-                    // Flutter
-                    hasFlutterAssets = entries.any {
-                        it.startsWith("assets/flutter_assets/") ||
-                                it.contains("isolate_snapshot_data") ||
-                                it.contains("vm_snapshot_data")
-                    },
-
-                    // React Native
-                    hasReactNativeBundle = entries.any {
-                        it.contains("index.android.bundle") ||
-                                it.contains("assets/index.android.js")
-                    },
-
-                    // Cordova/Ionic
-                    hasCordova = entries.any {
-                        it.startsWith("assets/www/cordova") ||
-                                it.contains("cordova.js")
-                    },
-
-                    // Unity
-                    hasUnityAssets = entries.any {
-                        it.startsWith("assets/bin/Data/") ||
-                                it.contains("resources.assets")
-                    },
-
-                    // Xamarin
-                    hasXamarinAssemblies = entries.any {
-                        it.startsWith("assets/assemblies/") ||
-                                it.contains("Mono.Android.dll")
-                    }
-                )
-            }
-        } catch (e: Exception) {
-            return ApkStructureInfo()
+            return entries.any {
+                it.name.contains("index.android.bundle") ||
+                        it.name.contains("index.bundle")
+            } || entries.any { it.name.contains("libreactnativejni.so") }
         }
     }
 
-    private fun detectKotlin(apkPath: String): Boolean {
-        try {
-            ZipFile(apkPath).use { zipFile ->
-                val entries = zipFile.entries().asSequence()
-                    .map { it.name }
-                    .toList()
-
-                if (entries.any { it.startsWith("kotlin/") }) {
-                    return true
-                }
-
-                if (entries.any {
-                        it.contains("kotlin", ignoreCase = true) &&
-                                it.endsWith(".kotlin_module")
-                    }) {
-                    return true
-                }
-
-                return false
-            }
-        } catch (e: Exception) {
-            return false
+    private fun isXamarin(apkPath: String, nativeLibs: List<LibraryInfo>): Boolean {
+        if (nativeLibs.any { it.name.contains("libmonodroid.so") }) {
+            return true
         }
+
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
+            return entries.any { it.name.startsWith("assemblies/") }
+        }
+    }
+
+    private fun isUnity(apkPath: String, nativeLibs: List<LibraryInfo>): Boolean {
+        if (nativeLibs.any { it.name.contains("libunity.so") }) {
+            return true
+        }
+
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
+            return entries.any {
+                it.name.contains("unity default resources") ||
+                        it.name.contains("unity_builtin_extra")
+            }
+        }
+    }
+
+    private fun isCordova(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
+
+            return entries.any { it.name.contains("cordova.js") } ||
+                    entries.any { it.name.startsWith("assets/www/") }
+        }
+    }
+
+    private fun isIonic(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            return zip.entries().toList().any {
+                it.name.contains("ionic.js") || it.name.contains("@ionic")
+            }
+        }
+    }
+
+    private fun isKotlinMultiplatform(nativeLibs: List<LibraryInfo>): Boolean {
+        return nativeLibs.any { it.name.contains("libskiko") }
+    }
+
+    private fun isNativeScript(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
+            return entries.any { it.name.contains("tns-java-classes.jar") }
+        }
+    }
+
+    fun detectFramework(apkPath: String, nativeLibs: List<LibraryInfo>): String {
+        val frameworkInfo = detectFrameworkDetailed(apkPath, nativeLibs)
+        return frameworkInfo.type.displayName
     }
 
     fun detectLanguage(apkPath: String): String {
-        return if (detectKotlin(apkPath)) "Kotlin" else "Java"
+        val hasKotlin = hasKotlinClasses(apkPath)
+        val hasJava = hasJavaClasses(apkPath)
+
+        return when {
+            hasKotlin && hasJava -> "Kotlin & Java"
+            hasKotlin -> "Kotlin"
+            hasJava -> "Java"
+            else -> "Unknown"
+        }
+    }
+
+    private fun hasKotlinClasses(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            return zip.entries().toList().any {
+                it.name.contains("kotlin") || it.name.contains("META-INF/kotlin")
+            }
+        }
+    }
+
+    private fun hasJavaClasses(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            return zip.entries().toList().any {
+                it.name.matches(Regex("classes\\d*\\.dex"))
+            }
+        }
     }
 }
-
-private data class ApkStructureInfo(
-    val hasFlutterAssets: Boolean = false,
-    val hasReactNativeBundle: Boolean = false,
-    val hasCordova: Boolean = false,
-    val hasUnityAssets: Boolean = false,
-    val hasXamarinAssemblies: Boolean = false
-)

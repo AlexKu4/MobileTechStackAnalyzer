@@ -14,5 +14,6 @@ data class AnalysisResult(
     val permissions: List<PermissionInfo> = emptyList(),
     val versionInfo: AppVersionInfo? = null,
     val securityFlags: SecurityFlags? = null,
-    val detectedLibraries: List<DetectedLibrary> = emptyList()
+    val detectedLibraries: List<DetectedLibrary> = emptyList(),
+    val frameworkInfo: FrameworkInfo? = null
 )
