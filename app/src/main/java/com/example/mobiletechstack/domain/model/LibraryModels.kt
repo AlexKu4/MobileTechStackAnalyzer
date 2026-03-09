@@ -11,4 +11,7 @@ enum class LibraryCategory(val displayName: String) {
     ADVERTISING("Advertising"),
     SOCIAL("Social Media"),
     PAYMENT("Payment"),
+    UI("UI Libraries"),
+    REACTIVE("Reactive Programming"),
+    OTHER("Other")
 }

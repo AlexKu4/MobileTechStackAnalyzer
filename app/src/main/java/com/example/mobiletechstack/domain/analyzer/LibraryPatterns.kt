@@ -186,12 +186,69 @@ object LibraryPatterns {
         LibraryPattern("com.checkout", "Checkout.com")
     )
 
+    val uiPatterns = listOf(
+        // Jetpack Compose
+        LibraryPattern("androidx.compose.ui", "Jetpack Compose"),
+        LibraryPattern("androidx.compose.runtime", "Jetpack Compose Runtime"),
+        LibraryPattern("androidx.compose.foundation", "Jetpack Compose Foundation"),
+        LibraryPattern("androidx.compose.material", "Jetpack Compose Material"),
+        LibraryPattern("androidx.compose.material3", "Jetpack Compose Material 3"),
+
+        // View Binding / Data Binding
+        LibraryPattern("androidx.databinding", "Data Binding"),
+        LibraryPattern("androidx.viewbinding", "View Binding"),
+
+        // AndroidX UI Components
+        LibraryPattern("androidx.recyclerview", "RecyclerView"),
+        LibraryPattern("androidx.constraintlayout", "ConstraintLayout"),
+        LibraryPattern("androidx.coordinatorlayout", "CoordinatorLayout"),
+        LibraryPattern("androidx.viewpager2", "ViewPager2"),
+        LibraryPattern("androidx.swiperefreshlayout", "SwipeRefreshLayout"),
+
+        // Material Components
+        LibraryPattern("com.google.android.material", "Material Components"),
+
+        // Lottie Animations
+        LibraryPattern("com.airbnb.lottie", "Lottie"),
+
+        // Navigation
+        LibraryPattern("androidx.navigation", "Jetpack Navigation")
+    )
+
+    val reactivePatterns = listOf(
+        // RxJava
+        LibraryPattern("io.reactivex.rxjava3", "RxJava 3"),
+        LibraryPattern("io.reactivex.rxjava2", "RxJava 2"),
+        LibraryPattern("io.reactivex", "RxJava"),
+
+        // RxKotlin
+        LibraryPattern("io.reactivex.rxkotlin", "RxKotlin"),
+
+        // RxAndroid
+        LibraryPattern("io.reactivex.android", "RxAndroid"),
+
+        // Kotlin Coroutines
+        LibraryPattern("kotlinx.coroutines", "Kotlin Coroutines"),
+
+        // Kotlin Flow
+        LibraryPattern("kotlinx.coroutines.flow", "Kotlin Flow"),
+
+        // LiveData
+        LibraryPattern("androidx.lifecycle.livedata", "LiveData"),
+
+        // Reactive Streams
+        LibraryPattern("org.reactivestreams", "Reactive Streams")
+    )
+
     fun getPatternsForCategory(category: LibraryCategory): List<LibraryPattern> {
         return when (category) {
             LibraryCategory.ANALYTICS -> analyticsPatterns
             LibraryCategory.ADVERTISING -> advertisingPatterns
             LibraryCategory.SOCIAL -> socialPatterns
             LibraryCategory.PAYMENT -> paymentPatterns
+            LibraryCategory.UI ->  uiPatterns
+            LibraryCategory.REACTIVE -> reactivePatterns
+            LibraryCategory.OTHER -> TODO()
         }
     }
 
@@ -200,7 +257,9 @@ object LibraryPatterns {
             LibraryCategory.ANALYTICS to analyticsPatterns,
             LibraryCategory.ADVERTISING to advertisingPatterns,
             LibraryCategory.SOCIAL to socialPatterns,
-            LibraryCategory.PAYMENT to paymentPatterns
+            LibraryCategory.PAYMENT to paymentPatterns,
+            LibraryCategory.UI to uiPatterns,
+            LibraryCategory.REACTIVE to reactivePatterns
         )
     }
 }
