@@ -15,5 +15,6 @@ data class AnalysisResult(
     val versionInfo: AppVersionInfo? = null,
     val securityFlags: SecurityFlags? = null,
     val detectedLibraries: List<DetectedLibrary> = emptyList(),
-    val frameworkInfo: FrameworkInfo? = null
+    val frameworkInfo: FrameworkInfo? = null,
+    val languageInfo: LanguageInfo? = null
 )

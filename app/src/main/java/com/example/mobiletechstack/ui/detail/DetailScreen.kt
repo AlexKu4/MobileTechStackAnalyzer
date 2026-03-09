@@ -20,6 +20,7 @@ import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.domain.model.AppVersionInfo
 import com.example.mobiletechstack.domain.model.DetectedLibrary
 import com.example.mobiletechstack.domain.model.FrameworkInfo
+import com.example.mobiletechstack.domain.model.LanguageInfo
 import com.example.mobiletechstack.domain.model.LibraryCategory
 import com.example.mobiletechstack.domain.model.PermissionCategory
 import com.example.mobiletechstack.domain.model.PermissionInfo
@@ -139,6 +140,12 @@ private fun DetailContent(result: AnalysisResult) {
         item {
             result.frameworkInfo?.let { frameworkInfo ->
                 FrameworkInfoSection(frameworkInfo = frameworkInfo)
+            }
+        }
+
+        item {
+            result.languageInfo?.let { languageInfo ->
+                LanguageInfoSection(languageInfo = languageInfo)
             }
         }
 
@@ -401,6 +408,82 @@ private fun SecurityFlagRow(
 private fun FrameworkInfoSection(frameworkInfo: FrameworkInfo) {
     SectionCard(title = "Framework Analysis") {
         InfoRow("Type", frameworkInfo.type.displayName)
+    }
+}
+
+@Composable
+private fun LanguageInfoSection(languageInfo: LanguageInfo) {
+    SectionCard(title = "Programming Languages") {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Primary language
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Primary",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = languageInfo.primary.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // All languages (если больше одного)
+            if (languageInfo.languages.size > 1) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "All Languages:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    languageInfo.languages.forEach { lang ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            // Индикатор primary
+                            if (lang == languageInfo.primary) {
+                                Text(
+                                    text = "★",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else {
+                                Text(
+                                    text = "•",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            Text(
+                                text = lang.displayName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (lang == languageInfo.primary) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

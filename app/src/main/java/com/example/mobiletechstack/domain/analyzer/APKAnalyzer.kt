@@ -24,7 +24,19 @@ class APKAnalyzer(private val context: Context) {
             val frameworkInfo = FrameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs)
             val framework = frameworkInfo.type.displayName
 
-            val language = FrameworkDetector.detectLanguage(apkPath)
+            val languageInfo = LanguageDetector.detectLanguagesDetailed(apkPath, nativeLibs)
+            val language = when {
+                languageInfo.languages.size > 1 -> {
+                    val others = languageInfo.languages
+                        .filter { it != languageInfo.primary }
+                        .joinToString(", ") { it.displayName }
+                    "${languageInfo.primary.displayName} & $others"
+                }
+                languageInfo.languages.size == 1 -> {
+                    languageInfo.languages.first().displayName
+                }
+                else -> "Unknown"
+            }
 
             val primaryAbi = NativeLibraryAnalyzer.getPrimaryAbi(nativeLibs)
 
@@ -58,7 +70,8 @@ class APKAnalyzer(private val context: Context) {
                 versionInfo,
                 securityFlags,
                 detectedLibraries,
-                frameworkInfo
+                frameworkInfo,
+                languageInfo
             )
         }
     }
