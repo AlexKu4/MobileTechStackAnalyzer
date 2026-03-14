@@ -4,25 +4,29 @@ import java.util.zip.ZipFile
 import com.example.mobiletechstack.domain.model.LibraryInfo
 import com.example.mobiletechstack.domain.model.FrameworkInfo
 import com.example.mobiletechstack.domain.model.FrameworkType
+import org.jf.dexlib2.DexFileFactory
+import org.jf.dexlib2.Opcodes
+import java.io.File
 
 
 object FrameworkDetector {
 
     fun detectFrameworkDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): FrameworkInfo {
+        val dexClasses = extractDexClasses(apkPath)
 
-        if (isFlutter(apkPath)) {
+        if (isFlutter(apkPath, dexClasses)) {
             return FrameworkInfo(type = FrameworkType.FLUTTER)
         }
 
-        if (isUnity(apkPath, nativeLibs)) {
+        if (isUnity(apkPath, nativeLibs, dexClasses)) {
             return FrameworkInfo(type = FrameworkType.UNITY)
         }
 
-        if (isReactNative(apkPath)) {
+        if (isReactNative(apkPath, dexClasses)) {
             return FrameworkInfo(type = FrameworkType.REACT_NATIVE)
         }
 
-        if (isXamarin(apkPath, nativeLibs)) {
+        if (isXamarin(apkPath, nativeLibs, dexClasses)) {
             return FrameworkInfo(type = FrameworkType.XAMARIN)
         }
 
@@ -30,7 +34,7 @@ object FrameworkDetector {
             return FrameworkInfo(type = FrameworkType.KOTLIN_MULTIPLATFORM)
         }
 
-        if (isCordova(apkPath)) {
+        if (isCordova(apkPath, dexClasses)) {
             val type = if (isIonic(apkPath)) {
                 FrameworkType.IONIC
             } else {
@@ -39,20 +43,60 @@ object FrameworkDetector {
             return FrameworkInfo(type = type)
         }
 
-        if (isNativeScript(apkPath)) {
-            return FrameworkInfo(type = FrameworkType.NATIVE_SCRIPT)
+        if (!isNativeScript(apkPath, dexClasses)) {
+            return FrameworkInfo(type = FrameworkType.NATIVE_ANDROID)
         }
-
-        return FrameworkInfo(type = FrameworkType.NATIVE_ANDROID)
+        return FrameworkInfo(type = FrameworkType.NATIVE_SCRIPT)
     }
 
-    private fun isFlutter(apkPath: String): Boolean {
+    private fun extractDexClasses(apkPath: String): Set<String> {
+        val classes = mutableSetOf<String>()
+        val tempDir = File(apkPath).parentFile ?: return emptySet()
+
+        try {
+            ZipFile(apkPath).use { zip ->
+                zip.entries().asSequence()
+                    .filter { it.name.matches(Regex("classes\\d*\\.dex")) }
+                    .take(3)
+                    .forEach { entry ->
+                        val tempFile = File(tempDir, "temp_${entry.name}")
+
+                        try {
+                            zip.getInputStream(entry).use { input ->
+                                tempFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+
+                            val dex = DexFileFactory.loadDexFile(tempFile, Opcodes.getDefault())
+
+                            dex.classes.forEach { classDef ->
+                                val className = classDef.type
+                                    .removePrefix("L")
+                                    .removeSuffix(";")
+                                    .replace('/', '.')
+
+                                classes.add(className)
+                            }
+
+                        } finally {
+                            tempFile.delete()
+                        }
+                    }
+            }
+        } catch (e: Exception) {
+            return emptySet()
+        }
+
+        return classes
+    }
+
+    private fun isFlutter(apkPath: String, dexClasses: Set<String>): Boolean {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
             val hasFlutterAssets = entries.any { it.name.startsWith("flutter_assets/") }
             val hasLibFlutter = entries.any { it.name.contains("libflutter.so") }
-
             val hasKernelBlob = entries.any { it.name.contains("kernel_blob.bin") }
             val hasIsolateSnapshot = entries.any {
                 it.name.contains("isolate_snapshot_data") ||
@@ -62,17 +106,23 @@ object FrameworkDetector {
                 it.name.contains("vm_snapshot_data") ||
                         it.name.contains("vm_snapshot_instr")
             }
-            val hasFlutterIcudtl = entries.any { it.name.contains("icudtl.dat") }
-            val hasFlutterEmbedding = entries.any { it.name.contains("io/flutter/") }
 
-            return (hasFlutterAssets && hasLibFlutter) ||
+            val hasFlutterClasses = dexClasses.any { className ->
+                className.startsWith("io.flutter.") ||
+                        className.startsWith("io.flutter.embedding.") ||
+                        className.startsWith("io.flutter.plugin.") ||
+                        className.startsWith("io.flutter.view.") ||
+                        className == "io.flutter.FlutterInjector"
+            }
+
+            return hasFlutterClasses ||
+                    (hasFlutterAssets && hasLibFlutter) ||
                     hasKernelBlob ||
-                    (hasIsolateSnapshot && hasVmSnapshot) ||
-                    (hasFlutterAssets && hasFlutterIcudtl && hasFlutterEmbedding)
+                    (hasIsolateSnapshot && hasVmSnapshot)
         }
     }
 
-    private fun isReactNative(apkPath: String): Boolean {
+    private fun isReactNative(apkPath: String, dexClasses: Set<String>): Boolean {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
@@ -82,32 +132,40 @@ object FrameworkDetector {
                         it.name.endsWith(".bundle")
             }
             val hasReactNativeJni = entries.any { it.name.contains("libreactnativejni.so") }
-
             val hasHermes = entries.any { it.name.contains("libhermes.so") }
             val hasJsc = entries.any {
                 it.name.contains("libjsc.so") ||
                         it.name.contains("libjscexecutor.so")
             }
 
-            val hasReactNativeBlob = entries.any { it.name.contains("libreact") }
             val hasFbjni = entries.any { it.name.contains("libfbjni.so") }
             val hasYoga = entries.any { it.name.contains("libyoga.so") }
+            val hasReactNativeBlob = entries.any { it.name.contains("libreact") }
             val hasTurboModules = entries.any { it.name.contains("turbomodulejsijni") }
 
-            return (hasJsBundle && (hasReactNativeJni || hasHermes || hasJsc)) ||
-                    (hasReactNativeBlob && hasFbjni && hasYoga) ||
-                    (hasHermes && hasFbjni)
+            val hasReactNativeClasses = dexClasses.any { className ->
+                className.startsWith("com.facebook.react.") ||
+                        className.startsWith("com.facebook.hermes.") ||
+                        className == "com.facebook.react.ReactApplication" ||
+                        className == "com.facebook.react.ReactPackage" ||
+                        className == "com.facebook.react.bridge.ReactContext"
+            }
+
+            val hasStrongRnSignature = (hasFbjni && hasYoga) ||
+                    (hasHermes && hasFbjni) ||
+                    hasReactNativeBlob ||
+                    hasTurboModules
+
+            return hasReactNativeClasses ||
+                    (hasJsBundle && (hasHermes || hasJsc)) ||
+                    hasStrongRnSignature
         }
     }
 
-    private fun isUnity(apkPath: String, nativeLibs: List<LibraryInfo>): Boolean {
+    private fun isUnity(apkPath: String, nativeLibs: List<LibraryInfo>, dexClasses: Set<String>): Boolean {
         val hasLibUnity = nativeLibs.any { it.name.contains("libunity.so") }
         val hasLibMain = nativeLibs.any { it.name == "libmain.so" }
         val hasLibIl2cpp = nativeLibs.any { it.name.contains("libil2cpp.so") }
-        val hasLibMono = nativeLibs.any {
-            it.name.contains("libmonobdwgc") ||
-                    it.name.contains("libmono-native")
-        }
 
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
@@ -118,25 +176,26 @@ object FrameworkDetector {
             }
             val hasUnityBuiltinExtra = entries.any { it.name.contains("unity_builtin_extra") }
             val hasGlobalMetadata = entries.any { it.name.contains("global-metadata.dat") }
-
             val hasUnityAssets = entries.any { it.name.startsWith("assets/bin/Data/") }
-            val hasDataFolder = entries.any { it.name.contains("assets/bin/Data/") }
-            val hasLevelFiles = entries.any {
-                it.name.contains("level") && it.name.contains("assets/bin/Data/")
+
+            // DEX классы Unity
+            val hasUnityClasses = dexClasses.any { className ->
+                className.startsWith("com.unity3d.") ||
+                        className == "com.unity3d.player.UnityPlayer" ||
+                        className == "com.unity3d.player.UnityPlayerActivity"
             }
 
-            return hasLibUnity ||
+            return hasUnityClasses ||
+                    hasLibUnity ||
                     (hasUnityDefaultResources && hasUnityBuiltinExtra) ||
                     (hasLibIl2cpp && hasGlobalMetadata) ||
-                    (hasLibMain && hasUnityAssets && hasDataFolder) ||
-                    (hasLibMono && hasUnityAssets)
+                    (hasLibMain && hasUnityAssets)
         }
     }
 
-    private fun isXamarin(apkPath: String, nativeLibs: List<LibraryInfo>): Boolean {
+    private fun isXamarin(apkPath: String, nativeLibs: List<LibraryInfo>, dexClasses: Set<String>): Boolean {
         val hasMonodroid = nativeLibs.any { it.name.contains("libmonodroid.so") }
         val hasMonoSgen = nativeLibs.any { it.name.contains("libmonosgen") }
-        val hasMonoPosixHelper = nativeLibs.any { it.name.contains("libMonoPosixHelper.so") }
         val hasXamarinApp = nativeLibs.any { it.name.contains("libxamarin-app.so") }
 
         ZipFile(apkPath).use { zip ->
@@ -147,20 +206,22 @@ object FrameworkDetector {
                 it.name.contains("Xamarin.Android") ||
                         it.name.contains("Mono.Android")
             }
-            val hasDllFiles = entries.any { it.name.endsWith(".dll") }
 
-            val hasAssembliesBlob = entries.any { it.name.contains("assemblies.blob") }
-            val hasTypemapIndex = entries.any { it.name.contains("typemap.index") }
+            val hasXamarinClasses = dexClasses.any { className ->
+                className.startsWith("mono.") ||
+                        className.startsWith("mono.android.") ||
+                        className == "mono.MonoRuntimeProvider" ||
+                        className == "mono.MonoPackageManager"
+            }
 
-            return hasMonodroid ||
+            return hasXamarinClasses ||
+                    hasMonodroid ||
                     (hasMonoSgen && hasAssembliesFolder) ||
-                    (hasMonoSgen && hasXamarinAndroid) ||
-                    (hasXamarinApp && hasDllFiles) ||
-                    (hasMonoPosixHelper && hasAssembliesBlob && hasTypemapIndex)
+                    (hasXamarinApp && hasXamarinAndroid)
         }
     }
 
-    private fun isCordova(apkPath: String): Boolean {
+    private fun isCordova(apkPath: String, dexClasses: Set<String>): Boolean {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
@@ -172,68 +233,49 @@ object FrameworkDetector {
                 it.name.contains("cordova_plugins.js") ||
                         it.name.contains("cordova-plugin")
             }
-
             val hasWwwFolder = entries.any { it.name.startsWith("assets/www/") }
-            val hasIndexHtml = entries.any {
-                it.name == "assets/www/index.html" ||
-                        it.name.contains("www/index.html")
+
+            val hasCordovaClasses = dexClasses.any { className ->
+                className.startsWith("org.apache.cordova.") ||
+                        className == "org.apache.cordova.CordovaActivity" ||
+                        className == "org.apache.cordova.CordovaPlugin" ||
+                        className == "org.apache.cordova.CordovaWebView"
             }
 
-            val hasConfigXml = entries.any { it.name.contains("config.xml") }
-            val hasCordovaConfig = entries.any { it.name.contains("res/xml/config.xml") }
-
-            return hasCordovaJs ||
-                    (hasWwwFolder && hasCordovaPlugins) ||
-                    (hasIndexHtml && hasCordovaConfig) ||
-                    (hasWwwFolder && hasConfigXml)
+            return hasCordovaClasses ||
+                    hasCordovaJs ||
+                    (hasWwwFolder && hasCordovaPlugins)
         }
     }
 
     private fun isIonic(apkPath: String): Boolean {
         ZipFile(apkPath).use { zip ->
-            val entries = zip.entries().toList()
-
-            val hasIonicJs = entries.any { it.name.contains("ionic.js") }
-            val hasIonicBundle = entries.any {
-                it.name.contains("ionic.bundle") ||
-                        it.name.contains("ionic-angular")
+            return zip.entries().toList().any {
+                it.name.contains("ionic.js") || it.name.contains("@ionic")
             }
-            val hasIonicPackage = entries.any { it.name.contains("@ionic/") }
-            val hasCapacitor = entries.any {
-                it.name.contains("capacitor") ||
-                        it.name.contains("@capacitor/")
-            }
-
-            return hasIonicJs || hasIonicBundle || hasIonicPackage || hasCapacitor
         }
     }
 
     private fun isKotlinMultiplatform(nativeLibs: List<LibraryInfo>): Boolean {
-        val hasSkiko = nativeLibs.any { it.name.contains("libskiko") }
-
-        val hasKotlinNative = nativeLibs.any {
-            it.name.contains("libknbinary.so") ||
-                    it.name.contains("libknbindings.so")
-        }
-
-        return hasSkiko || hasKotlinNative
+        return nativeLibs.any { it.name.contains("libskiko") }
     }
 
-    private fun isNativeScript(apkPath: String): Boolean {
+    private fun isNativeScript(apkPath: String, dexClasses: Set<String>): Boolean {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
             val hasTnsJavaClasses = entries.any { it.name.contains("tns-java-classes.jar") }
             val hasTnsRuntime = entries.any { it.name.contains("tns_modules") }
 
-            val hasAppFolder = entries.any { it.name.startsWith("assets/app/") }
-            val hasPackageJson = entries.any { it.name.contains("assets/app/package.json") }
-            val hasNativeScriptConfig = entries.any { it.name.contains("nsconfig.json") }
+            val hasNativeScriptClasses = dexClasses.any { className ->
+                className.startsWith("com.tns.") ||
+                        className == "com.tns.Runtime" ||
+                        className == "com.tns.NativeScriptApplication"
+            }
 
-            return hasTnsJavaClasses ||
-                    hasTnsRuntime ||
-                    (hasAppFolder && hasPackageJson) ||
-                    hasNativeScriptConfig
+            return hasNativeScriptClasses ||
+                    hasTnsJavaClasses ||
+                    hasTnsRuntime
         }
     }
 

@@ -112,16 +112,16 @@ object LanguageDetector {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
-            val hasJsBundle = entries.any {
-                it.name.contains(".bundle") ||
-                        it.name.contains(".js") ||
-                        it.name.contains("assets/index.android.bundle")
+            val hasReactNativeBundle = entries.any {
+                it.name.contains("index.android.bundle") ||
+                        it.name.contains("index.bundle")
             }
+
             val hasCordovaJs = entries.any {
                 it.name.contains("cordova.js")
             }
 
-            return hasJsBundle || hasCordovaJs
+            return hasReactNativeBundle || hasCordovaJs
         }
     }
 
@@ -199,7 +199,12 @@ object LanguageDetector {
         }
 
         if (languages.contains(ProgrammingLanguage.JAVASCRIPT)) {
-            return ProgrammingLanguage.JAVASCRIPT
+            val isActuallyReactNative = isReactNativeFramework(apkPath)
+            val isActuallyCordova = isCordovaFramework(apkPath)
+
+            if (isActuallyReactNative || isActuallyCordova) {
+                return ProgrammingLanguage.JAVASCRIPT
+            }
         }
 
         if (languages.contains(ProgrammingLanguage.CSHARP)) {
@@ -263,6 +268,29 @@ object LanguageDetector {
                 languageInfo.languages.first().displayName
             }
             else -> "Unknown"
+        }
+    }
+
+    private fun isReactNativeFramework(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            val entries = zip.entries().toList()
+
+            val hasRnBundle = entries.any {
+                it.name.contains("index.android.bundle") ||
+                        it.name.contains("index.bundle")
+            }
+
+            val hasHermes = entries.any { it.name.contains("libhermes.so") }
+            val hasFbjni = entries.any { it.name.contains("libfbjni.so") }
+            val hasYoga = entries.any { it.name.contains("libyoga.so") }
+
+            return hasRnBundle || (hasHermes && hasFbjni) || (hasFbjni && hasYoga)
+        }
+    }
+
+    private fun isCordovaFramework(apkPath: String): Boolean {
+        ZipFile(apkPath).use { zip ->
+            return zip.entries().toList().any { it.name.contains("cordova.js") }
         }
     }
 }
