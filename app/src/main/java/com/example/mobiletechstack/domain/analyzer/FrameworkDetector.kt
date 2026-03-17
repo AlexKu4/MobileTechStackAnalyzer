@@ -126,39 +126,31 @@ object FrameworkDetector {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
-            val hasJsBundle = entries.any {
-                it.name.contains("index.android.bundle") ||
-                        it.name.contains("index.bundle") ||
-                        it.name.endsWith(".bundle")
-            }
-            val hasReactNativeJni = entries.any { it.name.contains("libreactnativejni.so") }
-            val hasHermes = entries.any { it.name.contains("libhermes.so") }
-            val hasJsc = entries.any {
-                it.name.contains("libjsc.so") ||
-                        it.name.contains("libjscexecutor.so")
+            val hasReactNativeBundle = entries.any {
+                it.name == "assets/index.android.bundle" ||
+                        it.name == "assets/index.bundle"
             }
 
+            val hasReactAndroidModule = entries.any {
+                it.name.contains("ReactAndroid") && it.name.endsWith(".kotlin_module")
+            }
+
+            val hasHermes = entries.any { it.name.contains("libhermes.so") }
             val hasFbjni = entries.any { it.name.contains("libfbjni.so") }
             val hasYoga = entries.any { it.name.contains("libyoga.so") }
-            val hasReactNativeBlob = entries.any { it.name.contains("libreact") }
-            val hasTurboModules = entries.any { it.name.contains("turbomodulejsijni") }
+            val hasJsc = entries.any { it.name.contains("libjsc.so") }
 
             val hasReactNativeClasses = dexClasses.any { className ->
                 className.startsWith("com.facebook.react.") ||
-                        className.startsWith("com.facebook.hermes.") ||
-                        className == "com.facebook.react.ReactApplication" ||
-                        className == "com.facebook.react.ReactPackage" ||
-                        className == "com.facebook.react.bridge.ReactContext"
+                        className.startsWith("com.facebook.hermes.")
             }
 
-            val hasStrongRnSignature = (hasFbjni && hasYoga) ||
-                    (hasHermes && hasFbjni) ||
-                    hasReactNativeBlob ||
-                    hasTurboModules
-
-            return hasReactNativeClasses ||
-                    (hasJsBundle && (hasHermes || hasJsc)) ||
-                    hasStrongRnSignature
+            // React Native если:
+            return hasReactNativeBundle ||
+                    hasReactAndroidModule ||
+                    hasReactNativeClasses ||
+                    (hasFbjni && hasYoga) ||
+                    (hasHermes && hasFbjni)
         }
     }
 

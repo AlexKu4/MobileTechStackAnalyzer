@@ -4,6 +4,9 @@ import com.example.mobiletechstack.domain.model.LanguageInfo
 import com.example.mobiletechstack.domain.model.ProgrammingLanguage
 import com.example.mobiletechstack.domain.model.LibraryInfo
 import java.util.zip.ZipFile
+import org.jf.dexlib2.DexFileFactory
+import org.jf.dexlib2.Opcodes
+import java.io.File
 
 
 object LanguageDetector {
@@ -11,7 +14,9 @@ object LanguageDetector {
     fun detectLanguagesDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): LanguageInfo {
         val detectedLanguages = mutableSetOf<ProgrammingLanguage>()
 
-        if (hasKotlin(apkPath)) {
+        val dexClasses = extractDexClassNames(apkPath)
+
+        if (hasKotlin(apkPath, dexClasses)) {
             detectedLanguages.add(ProgrammingLanguage.KOTLIN)
         }
 
@@ -51,25 +56,71 @@ object LanguageDetector {
         )
     }
 
-    private fun hasKotlin(apkPath: String): Boolean {
+    private fun extractDexClassNames(apkPath: String): Set<String> {
+        val classes = mutableSetOf<String>()
+        val tempDir = File(apkPath).parentFile ?: return emptySet()
+
+        try {
+            ZipFile(apkPath).use { zip ->
+                val dexEntry = zip.entries().asSequence()
+                    .firstOrNull { it.name == "classes.dex" } ?: return emptySet()
+
+                val tempFile = File(tempDir, "temp_classes_lang.dex")
+
+                try {
+                    zip.getInputStream(dexEntry).use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+
+                    val dex = DexFileFactory.loadDexFile(tempFile, Opcodes.getDefault())
+
+                    dex.classes.forEach { classDef ->
+                        val className = classDef.type
+                            .removePrefix("L")
+                            .removeSuffix(";")
+                            .replace('/', '.')
+
+                        classes.add(className)
+                    }
+                } finally {
+                    tempFile.delete()
+                }
+            }
+        } catch (e: Exception) {
+            return emptySet()
+        }
+
+        return classes
+    }
+
+    private fun hasKotlin(apkPath: String, dexClasses: Set<String>): Boolean {
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
             val hasKotlinMetadata = entries.any {
                 it.name.contains("META-INF/kotlin") ||
-                        it.name.contains(".kotlin_module")
+                        it.name.endsWith(".kotlin_module")
             }
 
             val hasKotlinStdlib = entries.any {
-                it.name.contains("kotlin-stdlib") ||
-                        it.name.contains("kotlin/")
+                it.name.contains("kotlin-stdlib")
             }
 
             val hasKotlinx = entries.any {
                 it.name.contains("kotlinx/")
             }
 
-            return hasKotlinMetadata || hasKotlinStdlib || hasKotlinx
+            val hasKotlinClasses = dexClasses.any { className ->
+                className.startsWith("kotlin.") ||
+                        className.startsWith("kotlinx.") ||
+                        className.endsWith("Kt") ||
+                        className.contains("${'$'}Companion") ||
+                        className.contains("${'$'}DefaultImpls")
+            }
+
+            return hasKotlinMetadata || hasKotlinStdlib || hasKotlinx || hasKotlinClasses
         }
     }
 
