@@ -1,5 +1,6 @@
 package com.example.mobiletechstack.domain.analyzer
 
+import android.content.Context
 import com.example.mobiletechstack.domain.model.LanguageInfo
 import com.example.mobiletechstack.domain.model.ProgrammingLanguage
 import com.example.mobiletechstack.domain.model.LibraryInfo
@@ -9,7 +10,7 @@ import org.jf.dexlib2.Opcodes
 import java.io.File
 
 
-object LanguageDetector {
+class LanguageDetector(private val context: Context) {
 
     fun detectLanguagesDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): LanguageInfo {
         val detectedLanguages = mutableSetOf<ProgrammingLanguage>()
@@ -58,14 +59,20 @@ object LanguageDetector {
 
     private fun extractDexClassNames(apkPath: String): Set<String> {
         val classes = mutableSetOf<String>()
-        val tempDir = File(apkPath).parentFile ?: return emptySet()
 
         try {
             ZipFile(apkPath).use { zip ->
                 val dexEntry = zip.entries().asSequence()
-                    .firstOrNull { it.name == "classes.dex" } ?: return emptySet()
+                    .firstOrNull { it.name == "classes.dex" }
 
-                val tempFile = File(tempDir, "temp_classes_lang.dex")
+                if (dexEntry == null) {
+                    zip.entries().asSequence()
+                        .filter { it.name.endsWith(".dex") }
+                        .forEach { println("  - ${it.name}") }
+                    return emptySet()
+                }
+
+                val tempFile = File(context.cacheDir, "temp_classes_lang.dex")
 
                 try {
                     zip.getInputStream(dexEntry).use { input ->
@@ -84,11 +91,21 @@ object LanguageDetector {
 
                         classes.add(className)
                     }
+
+                    val kotlinClasses = classes.filter { className ->
+                        className.startsWith("kotlin.") ||
+                                className.startsWith("kotlinx.") ||
+                                className.endsWith("Kt") ||
+                                className.contains("${'$'}Companion") ||
+                                className.contains("${'$'}DefaultImpls")
+                    }
+
                 } finally {
-                    tempFile.delete()
+                    val deleted = tempFile.delete()
                 }
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             return emptySet()
         }
 
@@ -96,6 +113,7 @@ object LanguageDetector {
     }
 
     private fun hasKotlin(apkPath: String, dexClasses: Set<String>): Boolean {
+
         ZipFile(apkPath).use { zip ->
             val entries = zip.entries().toList()
 
@@ -286,7 +304,7 @@ object LanguageDetector {
         }
 
         if (hasJava) {
-            return ProgrammingLanguage.JAVA  // Pure Java
+            return ProgrammingLanguage.JAVA
         }
 
         if (languages.contains(ProgrammingLanguage.CPP)) {

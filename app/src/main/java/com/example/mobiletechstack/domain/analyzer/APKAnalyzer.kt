@@ -12,6 +12,7 @@ class APKAnalyzer(private val context: Context) {
     private val permissionAnalyzer = PermissionAnalyzer(context)
     private val manifestAnalyzer = ManifestAnalyzer(context)
     private val dexAnalyzer = DexAnalyzer(context)
+    private val languageDetector = LanguageDetector(context)
 
     suspend fun analyzeApp(packageName: String): AnalysisResult {
         return withContext(Dispatchers.IO) {
@@ -24,7 +25,7 @@ class APKAnalyzer(private val context: Context) {
             val frameworkInfo = FrameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs)
             val framework = frameworkInfo.type.displayName
 
-            val languageInfo = LanguageDetector.detectLanguagesDetailed(apkPath, nativeLibs)
+            val languageInfo = languageDetector.detectLanguagesDetailed(apkPath, nativeLibs)
             val language = when {
                 languageInfo.languages.size > 1 -> {
                     val others = languageInfo.languages
