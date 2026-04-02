@@ -1,18 +1,14 @@
 package com.example.mobiletechstack.domain.analyzer
 
-import java.util.zip.ZipFile
-import com.example.mobiletechstack.domain.model.LibraryInfo
 import com.example.mobiletechstack.domain.model.FrameworkInfo
 import com.example.mobiletechstack.domain.model.FrameworkType
-import org.jf.dexlib2.DexFileFactory
-import org.jf.dexlib2.Opcodes
-import java.io.File
+import com.example.mobiletechstack.domain.model.LibraryInfo
+import java.util.zip.ZipFile
 
+class FrameworkDetector(private val dexClassExtractor: DexClassExtractor) {
 
-object FrameworkDetector {
-
-    fun detectFrameworkDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): FrameworkInfo {
-        val dexClasses = extractDexClasses(apkPath)
+    suspend fun detectFrameworkDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): FrameworkInfo {
+        val dexClasses = dexClassExtractor.extractAllClassNames(apkPath)
 
         if (isFlutter(apkPath, dexClasses)) {
             return FrameworkInfo(type = FrameworkType.FLUTTER)
@@ -47,48 +43,6 @@ object FrameworkDetector {
             return FrameworkInfo(type = FrameworkType.NATIVE_ANDROID)
         }
         return FrameworkInfo(type = FrameworkType.NATIVE_SCRIPT)
-    }
-
-    private fun extractDexClasses(apkPath: String): Set<String> {
-        val classes = mutableSetOf<String>()
-        val tempDir = File(apkPath).parentFile ?: return emptySet()
-
-        try {
-            ZipFile(apkPath).use { zip ->
-                zip.entries().asSequence()
-                    .filter { it.name.matches(Regex("classes\\d*\\.dex")) }
-                    .take(3)
-                    .forEach { entry ->
-                        val tempFile = File(tempDir, "temp_${entry.name}")
-
-                        try {
-                            zip.getInputStream(entry).use { input ->
-                                tempFile.outputStream().use { output ->
-                                    input.copyTo(output)
-                                }
-                            }
-
-                            val dex = DexFileFactory.loadDexFile(tempFile, Opcodes.getDefault())
-
-                            dex.classes.forEach { classDef ->
-                                val className = classDef.type
-                                    .removePrefix("L")
-                                    .removeSuffix(";")
-                                    .replace('/', '.')
-
-                                classes.add(className)
-                            }
-
-                        } finally {
-                            tempFile.delete()
-                        }
-                    }
-            }
-        } catch (e: Exception) {
-            return emptySet()
-        }
-
-        return classes
     }
 
     private fun isFlutter(apkPath: String, dexClasses: Set<String>): Boolean {
@@ -145,7 +99,6 @@ object FrameworkDetector {
                         className.startsWith("com.facebook.hermes.")
             }
 
-            // React Native если:
             return hasReactNativeBundle ||
                     hasReactAndroidModule ||
                     hasReactNativeClasses ||
@@ -170,7 +123,6 @@ object FrameworkDetector {
             val hasGlobalMetadata = entries.any { it.name.contains("global-metadata.dat") }
             val hasUnityAssets = entries.any { it.name.startsWith("assets/bin/Data/") }
 
-            // DEX классы Unity
             val hasUnityClasses = dexClasses.any { className ->
                 className.startsWith("com.unity3d.") ||
                         className == "com.unity3d.player.UnityPlayer" ||
@@ -271,7 +223,7 @@ object FrameworkDetector {
         }
     }
 
-    fun detectFramework(apkPath: String, nativeLibs: List<LibraryInfo>): String {
+    suspend fun detectFramework(apkPath: String, nativeLibs: List<LibraryInfo>): String {
         val frameworkInfo = detectFrameworkDetailed(apkPath, nativeLibs)
         return frameworkInfo.type.displayName
     }

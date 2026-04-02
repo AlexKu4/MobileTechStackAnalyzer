@@ -9,10 +9,12 @@ import java.io.File
 
 class APKAnalyzer(private val context: Context) {
 
+    private val dexClassExtractor = DexClassExtractor(context)
     private val permissionAnalyzer = PermissionAnalyzer(context)
     private val manifestAnalyzer = ManifestAnalyzer(context)
     private val dexAnalyzer = DexAnalyzer(context)
-    private val languageDetector = LanguageDetector(context)
+    private val languageDetector = LanguageDetector(context, dexClassExtractor)
+    private val frameworkDetector = FrameworkDetector(dexClassExtractor)
 
     suspend fun analyzeApp(packageName: String): AnalysisResult {
         return withContext(Dispatchers.IO) {
@@ -22,7 +24,7 @@ class APKAnalyzer(private val context: Context) {
 
             val nativeLibs = NativeLibraryAnalyzer.extractNativeLibraries(apkPath)
 
-            val frameworkInfo = FrameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs)
+            val frameworkInfo = frameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs)
             val framework = frameworkInfo.type.displayName
 
             val languageInfo = languageDetector.detectLanguagesDetailed(apkPath, nativeLibs)
