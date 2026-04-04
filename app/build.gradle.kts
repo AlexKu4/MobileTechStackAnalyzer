@@ -14,16 +14,16 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "v1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
         create("release") {
             storeFile = file("KeyStore/KeyStoreFile.jks")
-            storePassword = "your-store-password"
-            keyAlias = "your-key-alias"
-            keyPassword = "your-key-password"
+            storePassword = "MobileTechStack"
+            keyAlias = "FirstKey"
+            keyPassword = "FirstKey"
         }
     }
     buildTypes {
