@@ -1,8 +1,6 @@
 package com.example.mobiletechstack.domain.analyzer
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.jf.dexlib2.DexFileFactory
 import org.jf.dexlib2.Opcodes
 import java.io.File
@@ -13,12 +11,10 @@ class DexClassExtractor(private val context: Context) {
     private var cachedClasses: Set<String>? = null
     private var cachedApkPath: String? = null
 
-    suspend fun extractAllClassNames(apkPath: String): Set<String> = withContext(Dispatchers.IO) {
-        // Возвращаем кэш, если анализируем то же приложение
+    suspend fun extractAllClassNames(apkPath: String): Set<String> {
         if (cachedApkPath == apkPath && cachedClasses != null) {
-            return@withContext cachedClasses!!
+            return cachedClasses!!
         }
-
         val allClasses = mutableSetOf<String>()
         val tempDir = context.cacheDir
 
@@ -30,11 +26,12 @@ class DexClassExtractor(private val context: Context) {
 
                 if (dexEntries.isEmpty()) {
                     cachedClasses = emptySet()
-                    return@withContext emptySet()
+                    return emptySet()
                 }
 
                 dexEntries.forEach { entry ->
-                    val tempFile = File(tempDir, "temp_dex_${System.currentTimeMillis()}_${entry.name}")
+                    val tempFile =
+                        File(tempDir, "temp_dex_${System.currentTimeMillis()}_${entry.name}")
                     try {
                         zip.getInputStream(entry).use { input ->
                             tempFile.outputStream().use { output ->
@@ -60,16 +57,12 @@ class DexClassExtractor(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
             cachedClasses = emptySet()
-            return@withContext emptySet()
+            return emptySet()
         }
 
         cachedApkPath = apkPath
         cachedClasses = allClasses
-        allClasses
+        return allClasses
     }
 
-    fun clearCache() {
-        cachedApkPath = null
-        cachedClasses = null
-    }
 }

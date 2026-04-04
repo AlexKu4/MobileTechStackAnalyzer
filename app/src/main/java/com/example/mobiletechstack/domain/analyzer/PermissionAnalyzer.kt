@@ -12,15 +12,10 @@ class PermissionAnalyzer(private val context: Context) {
 
     private val packageManager = context.packageManager
 
-    suspend fun extractPermissions(packageName: String): List<PermissionInfo> = withContext(Dispatchers.IO) {
-        try {
-            val packageInfo = packageManager.getPackageInfo(
-                packageName,
-                PackageManager.GET_PERMISSIONS
-            )
-
+    suspend fun extractPermissions(packageName: String): List<PermissionInfo> {
+        return try {
+            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             parsePermissions(packageInfo)
-
         } catch (e: Exception) {
             emptyList()
         }

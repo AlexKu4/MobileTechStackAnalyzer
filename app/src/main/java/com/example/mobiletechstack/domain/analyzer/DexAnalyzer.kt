@@ -2,8 +2,6 @@ package com.example.mobiletechstack.domain.analyzer
 
 import android.content.Context
 import com.example.mobiletechstack.domain.model.DetectedLibrary
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.jf.dexlib2.DexFileFactory
 import org.jf.dexlib2.Opcodes
 import java.io.File
@@ -12,21 +10,16 @@ import java.util.zip.ZipFile
 
 class DexAnalyzer(private val context: Context) {
 
-    suspend fun detectLibraries(apkPath: String): List<DetectedLibrary> = withContext(Dispatchers.IO) {
-        try {
+    suspend fun detectLibraries(apkPath: String): List<DetectedLibrary> {
+        return try {
             val detectedLibraries = mutableSetOf<DetectedLibrary>()
-
             val dexFiles = extractDexFiles(apkPath)
-
             dexFiles.forEach { dexFile ->
                 val libraries = analyzeDexFile(dexFile)
                 detectedLibraries.addAll(libraries)
             }
-
             dexFiles.forEach { it.delete() }
-
             detectedLibraries.toList().sortedBy { it.name }
-
         } catch (e: Exception) {
             emptyList()
         }

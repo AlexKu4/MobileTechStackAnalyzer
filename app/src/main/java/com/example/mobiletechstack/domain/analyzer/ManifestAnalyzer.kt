@@ -14,11 +14,10 @@ class ManifestAnalyzer(private val context: Context) {
     private val packageManager = context.packageManager
 
     @SuppressLint("ObsoleteSdkInt")
-    suspend fun extractVersionInfo(packageName: String): AppVersionInfo? = withContext(Dispatchers.IO) {
-        try {
+    suspend fun extractVersionInfo(packageName: String): AppVersionInfo? {
+        return try {
             val packageInfo = packageManager.getPackageInfo(packageName, 0)
             val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
-
             AppVersionInfo(
                 versionName = packageInfo.versionName ?: "Unknown",
                 versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -44,11 +43,9 @@ class ManifestAnalyzer(private val context: Context) {
         }
     }
 
-    @SuppressLint("ObsoleteSdkInt")
-    suspend fun extractSecurityFlags(packageName: String): SecurityFlags? = withContext(Dispatchers.IO) {
-        try {
+    suspend fun extractSecurityFlags(packageName: String): SecurityFlags? {
+        return try {
             val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
-
             SecurityFlags(
                 isDebuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0,
                 allowBackup = (applicationInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP) != 0,
