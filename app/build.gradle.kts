@@ -1,3 +1,12 @@
+import java.util.Properties
+
+val keystoreProperties = Properties().apply {
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -20,10 +29,13 @@ android {
     }
     signingConfigs {
         create("release") {
-            storeFile = file("KeyStore/KeyStoreFile.jks")
-            storePassword = "MobileTechStack"
-            keyAlias = "FirstKey"
-            keyPassword = "FirstKey"
+            val path = keystoreProperties.getProperty("KEYSTORE_PATH")
+            if (!path.isNullOrBlank()) {
+                storeFile = file(path)
+                storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = keystoreProperties.getProperty("KEY_ALIAS") ?: ""
+                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD") ?: ""
+            }
         }
     }
     buildTypes {
