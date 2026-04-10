@@ -126,14 +126,13 @@ private fun DetailContent(result: AnalysisResult) {
         modifier = Modifier.fillMaxSize()
     ) {
         item {
-            result.versionInfo?.let { versionInfo ->
-                VersionInfoSection(versionInfo = versionInfo)
-            }
-        }
-
-        item {
-            result.securityFlags?.let { securityFlags ->
-                SecurityFlagsSection(securityFlags = securityFlags)
+            SectionCard(title = "Tools:") {
+                InfoRow("Framework", result.framework)
+                InfoRow("Language", result.language)
+                InfoRow("Architecture", formatArchitecture(result.primaryAbi, result.is64Bit))
+                InfoRow("Package", result.packageName)
+                InfoRow("APK size", result.apkSize.formatSize())
+                InfoRow("Path", result.apkPath)
             }
         }
 
@@ -150,22 +149,15 @@ private fun DetailContent(result: AnalysisResult) {
         }
 
         item {
-            OutsideLibrariesSection(libraries = result.detectedLibraries)
-        }
-
-        item {
-            SectionCard(title = "Tools:") {
-                InfoRow("Framework", result.framework)
-                InfoRow("Language", result.language)
-                InfoRow("Architecture", formatArchitecture(result.primaryAbi, result.is64Bit))
-                InfoRow("Package", result.packageName)
-                InfoRow("APK size", result.apkSize.formatSize())
-                InfoRow("Path", result.apkPath)
+            result.versionInfo?.let { versionInfo ->
+                VersionInfoSection(versionInfo = versionInfo)
             }
         }
 
         item {
-            PermissionsSection(permissions = result.permissions)
+            result.securityFlags?.let { securityFlags ->
+                SecurityFlagsSection(securityFlags = securityFlags)
+            }
         }
 
         item {
@@ -210,6 +202,15 @@ private fun DetailContent(result: AnalysisResult) {
                 }
             }
         }
+
+        item {
+            OutsideLibrariesSection(libraries = result.detectedLibraries)
+        }
+
+        item {
+            PermissionsSection(permissions = result.permissions)
+        }
+
         item {
             Spacer(modifier = Modifier.height(16.dp))
         }
