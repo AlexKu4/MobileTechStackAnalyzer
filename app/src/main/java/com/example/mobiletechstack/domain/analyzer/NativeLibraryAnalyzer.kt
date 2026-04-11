@@ -18,10 +18,10 @@ object NativeLibraryAnalyzer {
                     }
                     .forEach { entry ->
                         val parts = entry.name.split("/")
-                        if (parts.size == 3) {
-                            val abi = parts[1]
-                            val libName = parts[2]
 
+                        if (parts.size >= 3) {
+                            val abi = parts[1]
+                            val libName = parts.last()
                             libraries.add(
                                 LibraryInfo(
                                     name = libName,
@@ -32,7 +32,8 @@ object NativeLibraryAnalyzer {
                         }
                     }
             }
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             println("Error extracting native libraries: ${e.message}")
         }
 
