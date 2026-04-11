@@ -13,7 +13,7 @@ class APKAnalyzer(private val context: Context) {
     private val permissionAnalyzer = PermissionAnalyzer(context)
     private val manifestAnalyzer = ManifestAnalyzer(context)
     private val dexAnalyzer = DexAnalyzer(context)
-    private val languageDetector = LanguageDetector(context, dexClassExtractor)
+    private val languageDetector = LanguageDetector(dexClassExtractor)
     private val frameworkDetector = FrameworkDetector(dexClassExtractor)
 
     suspend fun analyzeApp(packageName: String): AnalysisResult {

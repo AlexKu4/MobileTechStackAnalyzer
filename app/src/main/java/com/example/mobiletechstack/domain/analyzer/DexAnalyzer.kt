@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.mobiletechstack.domain.model.DetectedLibrary
 import org.jf.dexlib2.DexFileFactory
 import org.jf.dexlib2.Opcodes
+import timber.log.Timber
 import java.io.File
 import java.util.zip.ZipFile
 
@@ -21,6 +22,7 @@ class DexAnalyzer(private val context: Context) {
             dexFiles.forEach { it.delete() }
             detectedLibraries.toList().sortedBy { it.name }
         } catch (e: Exception) {
+            Timber.e(e, "Failed to extract class names from APK: $apkPath")
             emptyList()
         }
     }
@@ -78,7 +80,7 @@ class DexAnalyzer(private val context: Context) {
             }
 
         } catch (e: Exception) {
-            // ignore
+            Timber.d(e, "Error analyzing DEX file ${dexFile.name} (non-critical)")
         }
 
         return detectedLibraries.toList()

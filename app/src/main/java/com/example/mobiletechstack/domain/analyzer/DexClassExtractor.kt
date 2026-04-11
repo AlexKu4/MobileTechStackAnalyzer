@@ -3,6 +3,7 @@ package com.example.mobiletechstack.domain.analyzer
 import android.content.Context
 import org.jf.dexlib2.DexFileFactory
 import org.jf.dexlib2.Opcodes
+import timber.log.Timber
 import java.io.File
 import java.util.zip.ZipFile
 
@@ -48,14 +49,14 @@ class DexClassExtractor(private val context: Context) {
                             allClasses.add(className)
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Timber.e(e, "Failed to process dex entry: ${entry.name}")
                     } finally {
                         tempFile.delete()
                     }
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.e(e, "Failed to extract class names from APK: $apkPath")
             cachedClasses = emptySet()
             return emptySet()
         }

@@ -1,6 +1,7 @@
 package com.example.mobiletechstack.domain.analyzer
 
 import com.example.mobiletechstack.domain.model.LibraryInfo
+import timber.log.Timber
 import java.util.zip.ZipFile
 
 object NativeLibraryAnalyzer {
@@ -34,7 +35,7 @@ object NativeLibraryAnalyzer {
             }
         }
         catch (e: Exception) {
-            println("Error extracting native libraries: ${e.message}")
+            Timber.e(e, "Error extracting native libraries from $apkPath")
         }
 
         return libraries

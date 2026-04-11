@@ -6,8 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Build
 import com.example.mobiletechstack.domain.model.AppVersionInfo
 import com.example.mobiletechstack.domain.model.SecurityFlags
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 class ManifestAnalyzer(private val context: Context) {
 
@@ -39,6 +38,7 @@ class ManifestAnalyzer(private val context: Context) {
                 }
             )
         } catch (e: Exception) {
+            Timber.e(e, "Failed to extract version info for $packageName")
             null
         }
     }
@@ -57,6 +57,7 @@ class ManifestAnalyzer(private val context: Context) {
                 hasCode = (applicationInfo.flags and ApplicationInfo.FLAG_HAS_CODE) != 0
             )
         } catch (e: Exception) {
+            Timber.e(e, "Failed to extract security flags for $packageName")
             null
         }
     }

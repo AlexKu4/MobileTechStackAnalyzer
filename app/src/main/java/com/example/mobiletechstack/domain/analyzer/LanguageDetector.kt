@@ -1,6 +1,5 @@
 package com.example.mobiletechstack.domain.analyzer
 
-import android.content.Context
 import com.example.mobiletechstack.domain.model.LanguageInfo
 import com.example.mobiletechstack.domain.model.ProgrammingLanguage
 import com.example.mobiletechstack.domain.model.LibraryInfo
@@ -8,7 +7,6 @@ import java.util.zip.ZipFile
 
 
 class LanguageDetector(
-    private val context: Context,
     private val dexClassExtractor: DexClassExtractor
 ) {
 

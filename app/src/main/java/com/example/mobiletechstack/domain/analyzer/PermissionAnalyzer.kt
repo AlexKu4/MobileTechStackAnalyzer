@@ -5,8 +5,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.example.mobiletechstack.domain.model.PermissionInfo
 import com.example.mobiletechstack.domain.model.PermissionCategory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 class PermissionAnalyzer(private val context: Context) {
 
@@ -17,6 +16,7 @@ class PermissionAnalyzer(private val context: Context) {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             parsePermissions(packageInfo)
         } catch (e: Exception) {
+            Timber.e(e, "Failed to extract permissions for $packageName")
             emptyList()
         }
     }
@@ -28,6 +28,7 @@ class PermissionAnalyzer(private val context: Context) {
         val permissionsFlags = packageInfo.requestedPermissionsFlags
 
         if (requestedPermissions == null) {
+            Timber.e("Failed to parse permissions")
             return emptyList()
         }
 
