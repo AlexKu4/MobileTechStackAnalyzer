@@ -27,6 +27,9 @@ import com.example.mobiletechstack.domain.model.PermissionInfo
 import com.example.mobiletechstack.domain.model.SecurityFlags
 import com.example.mobiletechstack.ui.components.SectionCard
 import com.example.mobiletechstack.utils.formatSize
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.foundation.clickable
 
 
 private fun formatArchitecture(primaryAbi: String, is64Bit: Boolean): String {
@@ -437,7 +440,6 @@ private fun LanguageInfoSection(languageInfo: LanguageInfo) {
                 )
             }
 
-            // All languages (если больше одного)
             if (languageInfo.languages.size > 1) {
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -456,7 +458,6 @@ private fun LanguageInfoSection(languageInfo: LanguageInfo) {
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(start = 8.dp)
                         ) {
-                            // Индикатор primary
                             if (lang == languageInfo.primary) {
                                 Text(
                                     text = "★",
@@ -520,61 +521,61 @@ enum class GrantedFilter {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PermissionsSection(permissions: List<PermissionInfo>) {
+    var expanded by remember { mutableStateOf(false) }
     var grantedFilter by remember { mutableStateOf(GrantedFilter.ALL) }
 
-    SectionCard(title = "Permissions (${permissions.size})") {
-        if (permissions.isEmpty()) {
-            Text(
-                text = "No permissions requested",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { expanded = !expanded },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                GrantedFilterRow(
-                    selectedFilter = grantedFilter,
-                    onFilterChange = { grantedFilter = it },
-                    permissions = permissions
+                Text(
+                    text = "Permissions (${permissions.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand"
+                )
+            }
 
-                Divider()
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-                val filteredPermissions = when (grantedFilter) {
-                    GrantedFilter.ALL -> permissions
-                    GrantedFilter.GRANTED -> permissions.filter { it.granted }
-                    GrantedFilter.NOT_GRANTED -> permissions.filter { !it.granted }
-                }
-
-                if (filteredPermissions.isEmpty()) {
-                    Text(
-                        text = "No permissions match the filter",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 16.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    GrantedFilterRow(
+                        selectedFilter = grantedFilter,
+                        onFilterChange = { grantedFilter = it },
+                        permissions = permissions
                     )
-                } else {
-                    val groupedPermissions = filteredPermissions.groupBy { it.category }
-                    val sortedCategories = groupedPermissions.keys.sortedBy { it.displayName }
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        sortedCategories.forEach { category ->
-                            val categoryPermissions = groupedPermissions[category] ?: emptyList()
-
-                            CategoryHeader(
-                                category = category,
-                                count = categoryPermissions.size
-                            )
-
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                categoryPermissions.forEach { permission ->
-                                    PermissionItem(permission = permission)
+                    HorizontalDivider()
+                    val filteredPermissions = when (grantedFilter) {
+                        GrantedFilter.ALL -> permissions
+                        GrantedFilter.GRANTED -> permissions.filter { it.granted }
+                        GrantedFilter.NOT_GRANTED -> permissions.filter { !it.granted }
+                    }
+                    if (filteredPermissions.isEmpty()) {
+                        Text("No permissions match the filter")
+                    } else {
+                        val groupedPermissions = filteredPermissions.groupBy { it.category }
+                        val sortedCategories = groupedPermissions.keys.sortedBy { it.displayName }
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            sortedCategories.forEach { category ->
+                                val categoryPermissions = groupedPermissions[category] ?: emptyList()
+                                CategoryHeader(category, categoryPermissions.size)
+                                Column(modifier = Modifier.padding(start = 8.dp)) {
+                                    categoryPermissions.forEach { permission ->
+                                        PermissionItem(permission)
+                                    }
                                 }
                             }
                         }
