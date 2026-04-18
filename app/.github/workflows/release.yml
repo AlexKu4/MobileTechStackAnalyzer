@@ -1,13 +1,13 @@
-name: Build and Release Android APK
+name: Build and Create Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'               
+  workflow_dispatch:      
 
 jobs:
   build:
-    name: Build and Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -20,16 +20,16 @@ jobs:
           java-version: '17'
 
       - name: Decode Keystore
-        run: echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > app/keystore.jks
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
+      - name: Build APK
         env:
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
 
-      - name: Upload APK to Release
+      - name: Create Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/release/*.apk
