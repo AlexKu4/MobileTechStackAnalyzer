@@ -1,5 +1,6 @@
 import java.util.Properties
 
+val isCI = System.getenv("CI") == "true"
 val keystoreProperties = Properties().apply {
     val keystorePropsFile = rootProject.file("keystore.properties")
     if (keystorePropsFile.exists()) {
@@ -23,15 +24,25 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "v1.0.3"
+        versionName = "v1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
         create("release") {
-            val path = keystoreProperties.getProperty("KEYSTORE_PATH")
-            if (!path.isNullOrBlank()) {
-                storeFile = file(path)
+            if (isCI) {
+                storeFile = file("./keystore.jks")
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            } else {
+                val keystoreProperties = Properties().apply {
+                    val propsFile = rootProject.file("keystore.properties")
+                    if (propsFile.exists()) {
+                        propsFile.inputStream().use { load(it) }
+                    }
+                }
+                storeFile = file(keystoreProperties.getProperty("KEYSTORE_PATH") ?: "")
                 storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD") ?: ""
                 keyAlias = keystoreProperties.getProperty("KEY_ALIAS") ?: ""
                 keyPassword = keystoreProperties.getProperty("KEY_PASSWORD") ?: ""
