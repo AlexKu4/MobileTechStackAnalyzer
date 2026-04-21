@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,21 +23,12 @@ import com.example.mobiletechstack.domain.model.AppVersionInfo
 import com.example.mobiletechstack.domain.model.DetectedLibrary
 import com.example.mobiletechstack.domain.model.FrameworkInfo
 import com.example.mobiletechstack.domain.model.LanguageInfo
-import com.example.mobiletechstack.domain.model.LibraryCategory
+import com.example.mobiletechstack.domain.model.LibraryInfo
 import com.example.mobiletechstack.domain.model.PermissionCategory
 import com.example.mobiletechstack.domain.model.PermissionInfo
 import com.example.mobiletechstack.domain.model.SecurityFlags
 import com.example.mobiletechstack.ui.components.SectionCard
 import com.example.mobiletechstack.utils.formatSize
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.foundation.clickable
-
-
-private fun formatArchitecture(primaryAbi: String, is64Bit: Boolean): String {
-    val bitness = if (is64Bit) "64-bit" else "32-bit"
-    return "$primaryAbi ($bitness)"
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,10 +58,7 @@ fun DetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -84,8 +74,7 @@ fun DetailScreen(
                 .padding(paddingValues)
         ) {
             when (val state = analysisState) {
-                is AnalysisState.Idle -> { }
-
+                is AnalysisState.Idle -> {}
                 is AnalysisState.Loading -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
@@ -96,27 +85,20 @@ fun DetailScreen(
                         Text("App analysis...")
                     }
                 }
-
                 is AnalysisState.Error -> {
                     Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp),
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = state.message,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Text(state.message, color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.analyzeApp(packageName) }) {
                             Text("Retry")
                         }
                     }
                 }
-
                 is AnalysisState.Success -> {
-                    DetailContent(result = state.result)
+                    DetailTabs(result = state.result)
                 }
             }
         }
@@ -124,96 +106,172 @@ fun DetailScreen(
 }
 
 @Composable
-private fun DetailContent(result: AnalysisResult) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
+private fun DetailTabs(result: AnalysisResult) {
+    val tabs = listOf("Overview", "Security", "Permissions", "Libraries", "Native")
+    var selectedTab by remember { mutableStateOf(0) }
+
+    Column {
+        ScrollableTabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = MaterialTheme.colorScheme.surface,
+            edgePadding = 0.dp
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    text = { Text(title) },
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index }
+                )
+            }
+        }
+
+        when (selectedTab) {
+            0 -> OverviewTab(result)
+            1 -> SecurityTab(result.versionInfo, result.securityFlags)
+            2 -> PermissionsTab(result.permissions)
+            3 -> LibrariesTab(result.detectedLibraries)
+            4 -> NativeLibrariesTab(result.nativeLibraries)
+        }
+    }
+}
+
+// Вкладка 1: Общая информация
+@Composable
+private fun OverviewTab(result: AnalysisResult) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            SectionCard(title = "Tools:") {
-                InfoRow("Framework", result.framework)
-                InfoRow("Language", result.language)
-                InfoRow("Architecture", formatArchitecture(result.primaryAbi, result.is64Bit))
+            SectionCard(title = "App Info") {
+                InfoRow("App Name", result.appName)
                 InfoRow("Package", result.packageName)
+                result.versionInfo?.let {
+                    InfoRow("Version", "${it.versionName} (${it.versionCode})")
+                }
                 InfoRow("APK size", result.apkSize.formatSize())
                 InfoRow("Path", result.apkPath)
             }
         }
-
         item {
-            result.frameworkInfo?.let { frameworkInfo ->
-                FrameworkInfoSection(frameworkInfo = frameworkInfo)
+            SectionCard(title = "Framework & Languages") {
+                result.frameworkInfo?.let {
+                    InfoRow("Framework", it.type.displayName)
+                }
+                result.languageInfo?.let {
+                    InfoRow("Primary Language", it.primary.displayName)
+                    if (it.languages.size > 1) {
+                        InfoRow("All Languages", it.languages.joinToString(", ") { lang -> lang.displayName })
+                    }
+                }
             }
         }
-
         item {
-            result.languageInfo?.let { languageInfo ->
-                LanguageInfoSection(languageInfo = languageInfo)
+            SectionCard(title = "Architecture") {
+                InfoRow("Primary ABI", result.primaryAbi)
+                InfoRow("64-bit", if (result.is64Bit) "Yes" else "No")
+                InfoRow("Supported ABIs", result.supportedAbis.joinToString(", "))
             }
         }
-
         item {
-            result.versionInfo?.let { versionInfo ->
-                VersionInfoSection(versionInfo = versionInfo)
-            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
 
+// Вкладка 2: Безопасность и версии SDK
+@Composable
+private fun SecurityTab(versionInfo: AppVersionInfo?, securityFlags: SecurityFlags?) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            result.securityFlags?.let { securityFlags ->
-                SecurityFlagsSection(securityFlags = securityFlags)
-            }
-        }
-
-        item {
-            SectionCard(title = "Native libraries (${result.nativeLibraries.size})") {
-                if (result.nativeLibraries.isEmpty()) {
-                    Text(
-                        text = "Not found",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            SectionCard(title = "Version & SDK") {
+                if (versionInfo != null) {
+                    InfoRow("Version", "${versionInfo.versionName} (${versionInfo.versionCode})")
+                    InfoRow("Min SDK", formatSdkVersion(versionInfo.minSdkVersion))
+                    InfoRow("Target SDK", formatSdkVersion(versionInfo.targetSdkVersion))
+                    versionInfo.compileSdkVersion?.let {
+                        InfoRow("Compile SDK", formatSdkVersion(it))
+                    }
                 } else {
-                    val groupedLibs = result.nativeLibraries.groupBy { it.abi }
+                    Text("No version info available")
+                }
+            }
+        }
+        item {
+            SectionCard(title = "Security Flags") {
+                if (securityFlags != null) {
+                    SecurityFlagRow("Debuggable", securityFlags.isDebuggable,
+                        if (securityFlags.isDebuggable) "App can be debugged (security risk)" else "Debugging disabled")
+                    SecurityFlagRow("Allow Backup", securityFlags.allowBackup,
+                        if (securityFlags.allowBackup) "App data can be backed up via ADB" else "Backup disabled")
+                    SecurityFlagRow("Cleartext Traffic", securityFlags.usesCleartextTraffic,
+                        if (securityFlags.usesCleartextTraffic) "Unencrypted HTTP allowed" else "Only HTTPS")
+                    SecurityFlagRow("Has Code", securityFlags.hasCode,
+                        if (securityFlags.hasCode) "Contains executable code" else "No executable code")
+                } else {
+                    Text("No security flags available")
+                }
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
 
-                    groupedLibs.forEach { (abi, libs) ->
+// Вкладка 3: Разрешения (полностью скопировано из старого PermissionsSection, но без лишнего заголовка)
+@Composable
+private fun PermissionsTab(permissions: List<PermissionInfo>) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            PermissionsSection(permissions)
+        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+// Вкладка 4: Сторонние библиотеки
+@Composable
+private fun LibrariesTab(libraries: List<DetectedLibrary>) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            OutsideLibrariesSection(libraries)
+        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+// Вкладка 5: Нативные библиотеки
+@Composable
+private fun NativeLibrariesTab(nativeLibs: List<LibraryInfo>) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            SectionCard(title = "Native libraries (${nativeLibs.size})") {
+                if (nativeLibs.isEmpty()) {
+                    Text("No native libraries found", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    val grouped = nativeLibs.groupBy { it.abi }
+                    grouped.forEach { (abi, libs) ->
                         Text(
                             text = "$abi (${libs.size} libs)",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
                         )
-
                         libs.forEach { lib ->
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = lib.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = lib.size.formatSize(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Text(lib.name, modifier = Modifier.weight(1f))
+                                Text(lib.size.formatSize(), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
                 }
             }
         }
-
-        item {
-            OutsideLibrariesSection(libraries = result.detectedLibraries)
-        }
-
-        item {
-            PermissionsSection(permissions = result.permissions)
-        }
-
         item {
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -221,25 +279,74 @@ private fun DetailContent(result: AnalysisResult) {
 }
 
 @Composable
-private fun OutsideLibrariesSection(libraries: List<DetectedLibrary>) {
-    SectionCard(title = "Outside Libraries") {
-        if (libraries.isEmpty()) {
-            Text(
-                text = "No outside libraries detected",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val groupedLibraries = libraries.groupBy { it.category }
+private fun InfoRow(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
 
-                groupedLibraries.forEach { (category, libs) ->
-                    LibraryCategorySection(
-                        category = category,
-                        libraries = libs
+@Composable
+private fun SecurityFlagRow(label: String, value: Boolean, description: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (value) "Yes" else "No", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        }
+        Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun PermissionsSection(permissions: List<PermissionInfo>) {
+    var expanded by remember { mutableStateOf(false) }
+    var grantedFilter by remember { mutableStateOf(GrantedFilter.ALL) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Permissions (${permissions.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Collapse" else "Expand"
                     )
+                }
+            }
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    GrantedFilterRow(selectedFilter = grantedFilter, onFilterChange = { grantedFilter = it }, permissions = permissions)
+                    Divider()
+                    val filtered = when (grantedFilter) {
+                        GrantedFilter.ALL -> permissions
+                        GrantedFilter.GRANTED -> permissions.filter { it.granted }
+                        GrantedFilter.NOT_GRANTED -> permissions.filter { !it.granted }
+                    }
+                    if (filtered.isEmpty()) {
+                        Text("No permissions match the filter", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        val grouped = filtered.groupBy { it.category }
+                        grouped.keys.sortedBy { it.displayName }.forEach { category ->
+                            CategoryHeader(category, grouped[category]?.size ?: 0)
+                            Column(modifier = Modifier.padding(start = 8.dp)) {
+                                grouped[category]?.forEach { permission ->
+                                    PermissionItem(permission)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -247,242 +354,24 @@ private fun OutsideLibrariesSection(libraries: List<DetectedLibrary>) {
 }
 
 @Composable
-private fun LibraryCategorySection(
-    category: LibraryCategory,
-    libraries: List<DetectedLibrary>
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = category.displayName,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Text(
-                    text = libraries.size.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(start = 8.dp)
-        ) {
-            libraries.forEach { library ->
-                LibraryItem(library = library)
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryItem(library: DetectedLibrary) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(
-            text = library.name,
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        Text(
-            text = library.packageName,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun VersionInfoSection(versionInfo: AppVersionInfo) {
-    SectionCard(title = "Version & SDK") {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            InfoRow("Version", "${versionInfo.versionName} (${versionInfo.versionCode})")
-            InfoRow("Min SDK", formatSdkVersion(versionInfo.minSdkVersion))
-            InfoRow("Target SDK", formatSdkVersion(versionInfo.targetSdkVersion))
-
-            versionInfo.compileSdkVersion?.let { compileSdk ->
-                InfoRow("Compile SDK", formatSdkVersion(compileSdk))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SecurityFlagsSection(securityFlags: SecurityFlags) {
-    SectionCard(title = "Security Flags") {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SecurityFlagRow(
-                label = "Debuggable",
-                value = securityFlags.isDebuggable,
-                description = if (securityFlags.isDebuggable)
-                    "App can be debugged (security risk)"
-                else
-                    "Debugging disabled"
-            )
-
-            SecurityFlagRow(
-                label = "Allow Backup",
-                value = securityFlags.allowBackup,
-                description = if (securityFlags.allowBackup)
-                    "App data can be backed up via ADB"
-                else
-                    "Backup disabled"
-            )
-
-            SecurityFlagRow(
-                label = "Cleartext Traffic",
-                value = securityFlags.usesCleartextTraffic,
-                description = if (securityFlags.usesCleartextTraffic)
-                    "Unencrypted HTTP connections allowed"
-                else
-                    "Only HTTPS connections"
-            )
-
-            SecurityFlagRow(
-                label = "Has Code",
-                value = securityFlags.hasCode,
-                description = if (securityFlags.hasCode)
-                    "Contains executable code"
-                else
-                    "No executable code"
-            )
-        }
-    }
-}
-
-@Composable
-private fun SecurityFlagRow(
-    label: String,
-    value: Boolean,
-    description: String
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Text(
-                text = if (value) "Yes" else "No",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-    }
-}
-
-@Composable
-private fun FrameworkInfoSection(frameworkInfo: FrameworkInfo) {
-    SectionCard(title = "Framework Analysis") {
-        InfoRow("Type", frameworkInfo.type.displayName)
-    }
-}
-
-@Composable
-private fun LanguageInfoSection(languageInfo: LanguageInfo) {
-    SectionCard(title = "Programming Languages") {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Primary language
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Primary",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = languageInfo.primary.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            if (languageInfo.languages.size > 1) {
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "All Languages:",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    languageInfo.languages.forEach { lang ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            if (lang == languageInfo.primary) {
-                                Text(
-                                    text = "★",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            } else {
-                                Text(
-                                    text = "•",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            Text(
-                                text = lang.displayName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (lang == languageInfo.primary) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
+private fun OutsideLibrariesSection(libraries: List<DetectedLibrary>) {
+    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), elevation = CardDefaults.cardElevation(2.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Libraries (${libraries.size})", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(12.dp))
+            if (libraries.isEmpty()) {
+                Text("No outside libraries detected", style = MaterialTheme.typography.bodySmall)
+            } else {
+                val grouped = libraries.groupBy { it.category }
+                grouped.keys.sortedBy { it.displayName }.forEach { category ->
+                    Text(category.displayName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        grouped[category]?.forEach { lib ->
+                            Text("• ${lib.name}", style = MaterialTheme.typography.bodyMedium)
+                            Text(lib.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -516,74 +405,6 @@ enum class GrantedFilter {
     ALL,
     GRANTED,
     NOT_GRANTED
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PermissionsSection(permissions: List<PermissionInfo>) {
-    var expanded by remember { mutableStateOf(false) }
-    var grantedFilter by remember { mutableStateOf(GrantedFilter.ALL) }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable { expanded = !expanded },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Permissions (${permissions.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Collapse" else "Expand"
-                )
-            }
-
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GrantedFilterRow(
-                        selectedFilter = grantedFilter,
-                        onFilterChange = { grantedFilter = it },
-                        permissions = permissions
-                    )
-                    HorizontalDivider()
-                    val filteredPermissions = when (grantedFilter) {
-                        GrantedFilter.ALL -> permissions
-                        GrantedFilter.GRANTED -> permissions.filter { it.granted }
-                        GrantedFilter.NOT_GRANTED -> permissions.filter { !it.granted }
-                    }
-                    if (filteredPermissions.isEmpty()) {
-                        Text("No permissions match the filter")
-                    } else {
-                        val groupedPermissions = filteredPermissions.groupBy { it.category }
-                        val sortedCategories = groupedPermissions.keys.sortedBy { it.displayName }
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            sortedCategories.forEach { category ->
-                                val categoryPermissions = groupedPermissions[category] ?: emptyList()
-                                CategoryHeader(category, categoryPermissions.size)
-                                Column(modifier = Modifier.padding(start = 8.dp)) {
-                                    categoryPermissions.forEach { permission ->
-                                        PermissionItem(permission)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -700,25 +521,5 @@ private fun PermissionItem(permission: PermissionInfo) {
                     MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-    }
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
