@@ -135,7 +135,6 @@ private fun DetailTabs(result: AnalysisResult) {
     }
 }
 
-// Вкладка 1: Общая информация
 @Composable
 private fun OverviewTab(result: AnalysisResult) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -176,7 +175,6 @@ private fun OverviewTab(result: AnalysisResult) {
     }
 }
 
-// Вкладка 2: Безопасность и версии SDK
 @Composable
 private fun SecurityTab(versionInfo: AppVersionInfo?, securityFlags: SecurityFlags?) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -216,7 +214,6 @@ private fun SecurityTab(versionInfo: AppVersionInfo?, securityFlags: SecurityFla
     }
 }
 
-// Вкладка 3: Разрешения (полностью скопировано из старого PermissionsSection, но без лишнего заголовка)
 @Composable
 private fun PermissionsTab(permissions: List<PermissionInfo>) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -229,7 +226,6 @@ private fun PermissionsTab(permissions: List<PermissionInfo>) {
     }
 }
 
-// Вкладка 4: Сторонние библиотеки
 @Composable
 private fun LibrariesTab(libraries: List<DetectedLibrary>) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -242,38 +238,67 @@ private fun LibrariesTab(libraries: List<DetectedLibrary>) {
     }
 }
 
-// Вкладка 5: Нативные библиотеки
 @Composable
 private fun NativeLibrariesTab(nativeLibs: List<LibraryInfo>) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
-            SectionCard(title = "Native libraries (${nativeLibs.size})") {
-                if (nativeLibs.isEmpty()) {
-                    Text("No native libraries found", style = MaterialTheme.typography.bodySmall)
-                } else {
-                    val grouped = nativeLibs.groupBy { it.abi }
-                    grouped.forEach { (abi, libs) ->
+    if (nativeLibs.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("No native libraries found")
+        }
+        return
+    }
+
+    val grouped = nativeLibs.groupBy { it.abi }
+    val abis = grouped.keys.sortedWith(compareByDescending<String> { it.contains("64") }.thenBy { it })
+    var selectedAbiIndex by remember { mutableStateOf(0) }
+
+    Column {
+        ScrollableTabRow(
+            selectedTabIndex = selectedAbiIndex,
+            containerColor = MaterialTheme.colorScheme.surface,
+            edgePadding = 0.dp
+        ) {
+            abis.forEachIndexed { index, abi ->
+                Tab(
+                    text = { Text("$abi (${grouped[abi]?.size ?: 0})") },
+                    selected = selectedAbiIndex == index,
+                    onClick = { selectedAbiIndex = index }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val selectedAbi = abis.getOrNull(selectedAbiIndex)
+        if (selectedAbi != null) {
+            val libs = grouped[selectedAbi] ?: emptyList()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                libs.forEach { lib ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
-                            text = "$abi (${libs.size} libs)",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+                            text = lib.name,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium
                         )
-                        libs.forEach { lib ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(lib.name, modifier = Modifier.weight(1f))
-                                Text(lib.size.formatSize(), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
+                        Text(
+                            text = lib.size.formatSize(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
-        }
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
