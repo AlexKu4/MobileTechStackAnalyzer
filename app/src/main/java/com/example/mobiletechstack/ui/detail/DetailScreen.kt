@@ -1,5 +1,7 @@
 package com.example.mobiletechstack.ui.detail
 
+import android.graphics.drawable.Drawable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,20 +17,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.example.mobiletechstack.domain.model.AppVersionInfo
 import com.example.mobiletechstack.domain.model.DetectedLibrary
-import com.example.mobiletechstack.domain.model.FrameworkInfo
-import com.example.mobiletechstack.domain.model.LanguageInfo
 import com.example.mobiletechstack.domain.model.LibraryInfo
 import com.example.mobiletechstack.domain.model.PermissionCategory
 import com.example.mobiletechstack.domain.model.PermissionInfo
 import com.example.mobiletechstack.domain.model.SecurityFlags
 import com.example.mobiletechstack.ui.components.SectionCard
 import com.example.mobiletechstack.utils.formatSize
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,15 +53,7 @@ fun DetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text(appName)
-                        Text(
-                            text = packageName,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
+                title = { Text("Mobile TechStack") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -98,7 +96,7 @@ fun DetailScreen(
                     }
                 }
                 is AnalysisState.Success -> {
-                    DetailTabs(result = state.result)
+                    DetailTabs(result = state.result, packageName = packageName)
                 }
             }
         }
@@ -106,7 +104,7 @@ fun DetailScreen(
 }
 
 @Composable
-private fun DetailTabs(result: AnalysisResult) {
+private fun DetailTabs(result: AnalysisResult, packageName: String) {
     val tabs = listOf("Overview", "Security", "Permissions", "Libraries", "Native")
     var selectedTab by remember { mutableStateOf(0) }
 
@@ -126,7 +124,7 @@ private fun DetailTabs(result: AnalysisResult) {
         }
 
         when (selectedTab) {
-            0 -> OverviewTab(result)
+            0 -> OverviewTab(result, packageName)
             1 -> SecurityTab(result.versionInfo, result.securityFlags)
             2 -> PermissionsTab(result.permissions)
             3 -> LibrariesTab(result.detectedLibraries)
@@ -136,19 +134,96 @@ private fun DetailTabs(result: AnalysisResult) {
 }
 
 @Composable
-private fun OverviewTab(result: AnalysisResult) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
-            SectionCard(title = "App Info") {
-                InfoRow("App Name", result.appName)
-                InfoRow("Package", result.packageName)
-                result.versionInfo?.let {
-                    InfoRow("Version", "${it.versionName} (${it.versionCode})")
-                }
-                InfoRow("APK size", result.apkSize.formatSize())
-                InfoRow("Path", result.apkPath)
+private fun OverviewTab(result: AnalysisResult, packageName: String) {
+    val context = LocalContext.current
+    var appIcon by remember { mutableStateOf<Drawable?>(null) }
+
+    LaunchedEffect(packageName) {
+        withContext(Dispatchers.IO) {
+            try {
+                val pm = context.packageManager
+                val appInfo = pm.getApplicationInfo(packageName, 0)
+                appIcon = appInfo.loadIcon(pm)
+            } catch (e: Exception) {
             }
         }
+    }
+
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceBright
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (appIcon != null) {
+                            Image(
+                                bitmap = appIcon!!.toBitmap(width = 48, height = 48).asImageBitmap(),
+                                contentDescription = "App icon",
+                                modifier = Modifier.size(48.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.size(48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = result.appName,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = result.packageName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val versionInfo = result.versionInfo
+                    val security = result.securityFlags
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            InfoRowCompact("Version", "${versionInfo?.versionName ?: "Unknown"} (${versionInfo?.versionCode ?: "?"})")
+                            InfoRowCompact("Min SDK", versionInfo?.minSdkVersion?.let { formatSdkVersion(it) } ?: "Unknown")
+                            InfoRowCompact("Target SDK", versionInfo?.targetSdkVersion?.let { formatSdkVersion(it) } ?: "Unknown")
+                            InfoRowCompact("APK size", result.apkSize.formatSize())
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            InfoRowCompact("Path", result.apkPath.takeLast(30))
+                            InfoRowCompact("Debuggable", if (security?.isDebuggable == true) "Yes" else "No")
+                            InfoRowCompact("Allow Backup", if (security?.allowBackup == true) "Yes" else "No")
+                            InfoRowCompact("Cleartext", if (security?.usesCleartextTraffic == true) "Yes" else "No")
+                        }
+                    }
+                }
+            }
+        }
+
+
         item {
             SectionCard(title = "Framework & Languages") {
                 result.frameworkInfo?.let {
@@ -546,5 +621,21 @@ private fun PermissionItem(permission: PermissionInfo) {
                     MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun InfoRowCompact(label: String, value: String) {
+    Column(modifier = Modifier.padding(vertical = 2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
