@@ -399,7 +399,6 @@ private fun SecurityFlagRow(label: String, value: Boolean, description: String) 
 
 @Composable
 private fun PermissionsSection(permissions: List<PermissionInfo>) {
-    var expanded by remember { mutableStateOf(false) }
     var grantedFilter by remember { mutableStateOf(GrantedFilter.ALL) }
 
     Card(
@@ -407,43 +406,34 @@ private fun PermissionsSection(permissions: List<PermissionInfo>) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Permissions (${permissions.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+            Text(
+                text = "Permissions (${permissions.size})",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                GrantedFilterRow(
+                    selectedFilter = grantedFilter,
+                    onFilterChange = { grantedFilter = it },
+                    permissions = permissions
                 )
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse" else "Expand"
-                    )
+                Divider()
+                val filtered = when (grantedFilter) {
+                    GrantedFilter.ALL -> permissions
+                    GrantedFilter.GRANTED -> permissions.filter { it.granted }
+                    GrantedFilter.NOT_GRANTED -> permissions.filter { !it.granted }
                 }
-            }
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GrantedFilterRow(selectedFilter = grantedFilter, onFilterChange = { grantedFilter = it }, permissions = permissions)
-                    Divider()
-                    val filtered = when (grantedFilter) {
-                        GrantedFilter.ALL -> permissions
-                        GrantedFilter.GRANTED -> permissions.filter { it.granted }
-                        GrantedFilter.NOT_GRANTED -> permissions.filter { !it.granted }
-                    }
-                    if (filtered.isEmpty()) {
-                        Text("No permissions match the filter", style = MaterialTheme.typography.bodySmall)
-                    } else {
-                        val grouped = filtered.groupBy { it.category }
-                        grouped.keys.sortedBy { it.displayName }.forEach { category ->
-                            CategoryHeader(category, grouped[category]?.size ?: 0)
-                            Column(modifier = Modifier.padding(start = 8.dp)) {
-                                grouped[category]?.forEach { permission ->
-                                    PermissionItem(permission)
-                                }
+                if (filtered.isEmpty()) {
+                    Text("No permissions match the filter", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    val grouped = filtered.groupBy { it.category }
+                    grouped.keys.sortedBy { it.displayName }.forEach { category ->
+                        CategoryHeader(category, grouped[category]?.size ?: 0)
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            grouped[category]?.forEach { permission ->
+                                PermissionItem(permission)
                             }
                         }
                     }
