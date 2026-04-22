@@ -95,6 +95,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.material.icons.extended)
     kapt(libs.androidx.room.compiler)
 }
 

@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 
@@ -33,6 +34,7 @@ fun AppListScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -49,126 +51,120 @@ fun AppListScreen(
             }
         }
     }
+
     val filteredApps = remember(allApps, searchQuery) {
-        if (searchQuery.isBlank()) {
-            allApps
-        } else {
-            allApps.filter { app ->
-                app.appName.contains(searchQuery, ignoreCase = true) ||
-                        app.packageName.contains(searchQuery, ignoreCase = true)
-            }
-        }
+        if (searchQuery.isBlank()) allApps
+        else allApps.filter { it.appName.contains(searchQuery, ignoreCase = true) || it.packageName.contains(searchQuery, ignoreCase = true) }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = "Mobile TechStack",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        if (!isLoading && allApps.isNotEmpty()) {
-                            Text(
-                                text = "${filteredApps.size} of ${allApps.size} apps",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
+                    if (isSearchActive) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Search by name or package") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
+                        )
+                    } else {
+                        Text("Mobile TechStack", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+                navigationIcon = {
+                    if (isSearchActive) {
+                        IconButton(onClick = {
+                            isSearchActive = false
+                            searchQuery = ""
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
+                actions = {
+                    if (!isSearchActive) {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                ),
+                )
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                when {
-                    isLoading -> {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Loading apps...")
-                        }
+            when {
+                isLoading -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Loading apps...")
                     }
-
-                    errorMessage != null -> {
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = {
-                                scope.launch {
-                                    try {
-                                        isLoading = true
-                                        errorMessage = null
-                                        allApps = withContext(Dispatchers.IO) {
-                                            context.packageManager.getInstalledApps()
-                                        }
-                                        isLoading = false
-                                    } catch (e: Exception) {
-                                        errorMessage = "Error: ${e.message}"
-                                        isLoading = false
+                }
+                errorMessage != null -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = {
+                            scope.launch {
+                                try {
+                                    isLoading = true
+                                    errorMessage = null
+                                    allApps = withContext(Dispatchers.IO) {
+                                        context.packageManager.getInstalledApps()
                                     }
+                                    isLoading = false
+                                } catch (e: Exception) {
+                                    errorMessage = "Error: ${e.message}"
+                                    isLoading = false
                                 }
-                            }) {
-                                Text("Retry")
                             }
+                        }) {
+                            Text("Retry")
                         }
                     }
-
-                    filteredApps.isEmpty() -> {
-                        Text(
-                            text = if (searchQuery.isNotBlank()) "No apps matching \"$searchQuery\"" else "No apps found",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp)
-                        ) {
-                            items(filteredApps) { app ->
-                                AppCard(
-                                    icon = app.icon,
-                                    appName = app.appName,
-                                    packageName = app.packageName,
-                                    versionName = app.versionName,
-                                    apkSize = app.apkSize.formatSize(),
-                                    onClick = {
-                                        onAppClick(app.packageName, app.appName)
-                                    }
-                                )
-                            }
+                }
+                filteredApps.isEmpty() -> {
+                    Text(
+                        text = if (searchQuery.isNotBlank()) "No apps match \"$searchQuery\"" else "No apps found",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(filteredApps) { app ->
+                            AppCard(
+                                icon = app.icon,
+                                appName = app.appName,
+                                packageName = app.packageName,
+                                versionName = app.versionName,
+                                apkSize = app.apkSize.formatSize(),
+                                onClick = { onAppClick(app.packageName, app.appName) }
+                            )
                         }
                     }
                 }
