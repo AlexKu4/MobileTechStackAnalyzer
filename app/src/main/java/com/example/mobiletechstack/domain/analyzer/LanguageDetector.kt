@@ -10,10 +10,8 @@ class LanguageDetector(
     private val dexClassExtractor: DexClassExtractor
 ) {
 
-    suspend fun detectLanguagesDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): LanguageInfo {
+    suspend fun detectLanguagesDetailed(apkPath: String, nativeLibs: List<LibraryInfo>, dexClasses: Set<String>): LanguageInfo {
         val detectedLanguages = mutableSetOf<ProgrammingLanguage>()
-
-        val dexClasses = dexClassExtractor.extractAllClassNames(apkPath)
 
         if (hasKotlin(apkPath, dexClasses)) {
             detectedLanguages.add(ProgrammingLanguage.KOTLIN)
@@ -260,8 +258,8 @@ class LanguageDetector(
         return languages.first()
     }
 
-    suspend fun detectLanguage(apkPath: String): String {
-        val languageInfo = detectLanguagesDetailed(apkPath, emptyList())
+    suspend fun detectLanguage(apkPath: String, dexClasses: Set<String>): String {
+        val languageInfo = detectLanguagesDetailed(apkPath, emptyList(), dexClasses)
 
         return when {
             languageInfo.languages.size > 1 -> {
