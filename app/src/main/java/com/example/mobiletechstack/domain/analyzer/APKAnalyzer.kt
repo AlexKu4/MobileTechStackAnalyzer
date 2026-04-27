@@ -18,8 +18,8 @@ class APKAnalyzer(private val context: Context) {
     private val languageDetector = LanguageDetector(dexClassExtractor)
     private val frameworkDetector = FrameworkDetector(dexClassExtractor)
 
-    suspend fun analyzeApp(packageName: String): AnalysisResult {
-        return withContext(Dispatchers.IO) {
+    suspend fun analyzeApp(packageName: String): AnalysisResult = coroutineScope{
+        withContext(Dispatchers.IO) {
             val packageManager = context.packageManager
             val appInfo = packageManager.getApplicationInfo(packageName, 0)
             val apkPath = appInfo.sourceDir
