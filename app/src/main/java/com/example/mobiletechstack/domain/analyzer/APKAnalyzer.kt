@@ -36,6 +36,7 @@ class APKAnalyzer(private val context: Context) {
             val frameworkInfoDeferred = async { frameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs, dexClasses) }
             val languageInfoDeferred = async { languageDetector.detectLanguagesDetailed(apkPath, nativeLibs, dexClasses) }
             val detectedLibrariesDeferred = async { dexAnalyzer.detectLibraries(apkPath, dexClasses) }
+            val obfuscationInfoDeferred = async { ObfuscationDetector().hasObfuscation(dexClasses) }
 
             val frameworkInfo = frameworkInfoDeferred.await()
             val framework = frameworkInfo.type.displayName
@@ -62,6 +63,7 @@ class APKAnalyzer(private val context: Context) {
             val supportedAbis = NativeLibraryAnalyzer.getAbis(nativeLibs)
             val appName = appInfo.loadLabel(packageManager).toString()
             val apkSize = File(apkPath).length()
+            val hasObfuscation = obfuscationInfoDeferred.await()
 
             AnalysisResult(
                 packageName,
@@ -79,7 +81,8 @@ class APKAnalyzer(private val context: Context) {
                 securityFlags,
                 detectedLibraries,
                 frameworkInfo,
-                languageInfo
+                languageInfo,
+                hasObfuscation
             )
         }
     }

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +36,11 @@ import com.example.mobiletechstack.ui.components.SectionCard
 import com.example.mobiletechstack.utils.formatSize
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,6 +143,7 @@ private fun DetailTabs(result: AnalysisResult, packageName: String) {
 private fun OverviewTab(result: AnalysisResult, packageName: String) {
     val context = LocalContext.current
     var appIcon by remember { mutableStateOf<Drawable?>(null) }
+    var showObfuscationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(packageName) {
         withContext(Dispatchers.IO) {
@@ -166,37 +173,53 @@ private fun OverviewTab(result: AnalysisResult, packageName: String) {
                         .padding(16.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        if (appIcon != null) {
-                            Image(
-                                bitmap = appIcon!!.toBitmap(width = 48, height = 48).asImageBitmap(),
-                                contentDescription = "App icon",
-                                modifier = Modifier.size(48.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier.size(48.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (appIcon != null) {
+                                Image(
+                                    bitmap = appIcon!!.toBitmap(width = 48, height = 48).asImageBitmap(),
+                                    contentDescription = "App icon",
+                                    modifier = Modifier.size(48.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier.size(48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = result.appName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = result.packageName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = result.appName,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = result.packageName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
+
+                        if (result.hasObfuscation) {
+                            IconButton(onClick = { showObfuscationDialog = true }) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = "Obfuscation detected",
+                                    tint = Color(0xFFFF9800),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
+
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -247,6 +270,23 @@ private fun OverviewTab(result: AnalysisResult, packageName: String) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+    if (showObfuscationDialog) {
+        AlertDialog(
+            onDismissRequest = { showObfuscationDialog = false },
+            title = { Text("Obfuscation Detected") },
+            text = {
+                Text(
+                    "This app appears to be obfuscated (ProGuard/R8). " +
+                            "The analysis may contain mistakes"
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showObfuscationDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }
 
