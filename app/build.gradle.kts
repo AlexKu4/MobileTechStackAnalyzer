@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.gson)
     kapt(libs.androidx.room.compiler)
 }
 

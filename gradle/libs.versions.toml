@@ -12,6 +12,7 @@ composeBom = "2024.04.01"
 dexlib2 = "2.5.2"
 room = "2.6.1"
 timber = "5.0.1"
+gson = "2.10.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended"}
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

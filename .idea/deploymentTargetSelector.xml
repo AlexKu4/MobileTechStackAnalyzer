@@ -4,14 +4,17 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-04-21T20:35:13.908035300Z">
+        <DropdownSelection timestamp="2026-04-22T13:34:35.132268100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=ab1bf3eb" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Arnau\.android\avd\Medium_Phone_API_34.avd" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="AnalysisResultDaoTest">
+        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>
