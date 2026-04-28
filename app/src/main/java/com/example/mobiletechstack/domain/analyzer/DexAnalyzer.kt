@@ -11,18 +11,28 @@ import java.util.zip.ZipFile
 
 class DexAnalyzer(private val context: Context) {
 
-    suspend fun detectLibraries(apkPath: String): List<DetectedLibrary> {
+    suspend fun detectLibraries(apkPath: String, dexClasses: Set<String>): List<DetectedLibrary> {
         return try {
             val detectedLibraries = mutableSetOf<DetectedLibrary>()
-            val dexFiles = extractDexFiles(apkPath)
-            dexFiles.forEach { dexFile ->
-                val libraries = analyzeDexFile(dexFile)
-                detectedLibraries.addAll(libraries)
+            val allPatterns = LibraryPatterns.getAllPatterns()
+            dexClasses.forEach { className ->
+                allPatterns.forEach { (category, patterns) ->
+                    patterns.forEach { pattern ->
+                        if (className.startsWith(pattern.packagePattern)) {
+                            detectedLibraries.add(
+                                DetectedLibrary(
+                                    name = pattern.libraryName,
+                                    packageName = pattern.packagePattern,
+                                    category = category
+                                )
+                            )
+                        }
+                    }
+                }
             }
-            dexFiles.forEach { it.delete() }
             detectedLibraries.toList().sortedBy { it.name }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to extract class names from APK: $apkPath")
+            Timber.e(e, "Failed to detect libraries from APK: $apkPath")
             emptyList()
         }
     }
@@ -86,7 +96,7 @@ class DexAnalyzer(private val context: Context) {
         return detectedLibraries.toList()
     }
 
-    suspend fun detectAnalyticsLibraries(apkPath: String): List<DetectedLibrary> {
-        return detectLibraries(apkPath)
+    suspend fun detectAnalyticsLibraries(apkPath: String, dexClasses: Set<String>): List<DetectedLibrary> {
+        return detectLibraries(apkPath, dexClasses)
     }
 }

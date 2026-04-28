@@ -7,8 +7,7 @@ import java.util.zip.ZipFile
 
 class FrameworkDetector(private val dexClassExtractor: DexClassExtractor) {
 
-    suspend fun detectFrameworkDetailed(apkPath: String, nativeLibs: List<LibraryInfo>): FrameworkInfo {
-        val dexClasses = dexClassExtractor.extractAllClassNames(apkPath)
+    suspend fun detectFrameworkDetailed(apkPath: String, nativeLibs: List<LibraryInfo>, dexClasses: Set<String>): FrameworkInfo {
 
         if (isFlutter(apkPath, dexClasses)) {
             return FrameworkInfo(type = FrameworkType.FLUTTER)
@@ -223,8 +222,8 @@ class FrameworkDetector(private val dexClassExtractor: DexClassExtractor) {
         }
     }
 
-    suspend fun detectFramework(apkPath: String, nativeLibs: List<LibraryInfo>): String {
-        val frameworkInfo = detectFrameworkDetailed(apkPath, nativeLibs)
+    suspend fun detectFramework(apkPath: String, nativeLibs: List<LibraryInfo>, dexClasses: Set<String>): String {
+        val frameworkInfo = detectFrameworkDetailed(apkPath, nativeLibs, dexClasses)
         return frameworkInfo.type.displayName
     }
 
