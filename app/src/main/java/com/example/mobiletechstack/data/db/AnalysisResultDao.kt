@@ -18,4 +18,8 @@ interface AnalysisResultDao {
 
     @Query("DELETE FROM analysis_results WHERE packageName = :packageName")
     suspend fun deleteByPackageName(packageName: String)
+
+    // Оставляет только :limit самых свежих записей, остальные удаляет
+    @Query("DELETE FROM analysis_results WHERE packageName NOT IN (SELECT packageName FROM analysis_results ORDER BY analyzedAt DESC LIMIT :limit)")
+    suspend fun trimToLimit(limit: Int)
 }

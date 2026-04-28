@@ -102,7 +102,19 @@ fun DetailScreen(
                     }
                 }
                 is AnalysisState.Success -> {
-                    DetailTabs(result = state.result, packageName = packageName)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.fromCache) {
+                            Text(
+                                text = "Из кэша",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                                    .align(Alignment.End)
+                            )
+                        }
+                        DetailTabs(result = state.result, packageName = packageName)
+                    }
                 }
             }
         }
