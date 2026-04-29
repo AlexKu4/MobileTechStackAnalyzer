@@ -38,6 +38,9 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
         dao.trimToLimit(CACHE_LIMIT)
     }
 
+    suspend fun getLastAnalyzedAt(packageName: String): Long? =
+        dao.getByPackageName(packageName)?.analyzedAt
+
     // Возвращает все сохранённые результаты, отсортированные от новых к старым
     suspend fun getHistory(): List<HistoryEntry> {
         return dao.getAllSortedByDate().mapNotNull { entity ->

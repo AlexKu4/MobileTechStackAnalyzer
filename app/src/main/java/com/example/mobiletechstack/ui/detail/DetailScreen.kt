@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import java.text.SimpleDateFormat
+import java.util.Locale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -51,6 +53,7 @@ fun DetailScreen(
     viewModel: DetailViewModel = viewModel()
 ) {
     val analysisState by viewModel.analysisState.collectAsState()
+    val lastAnalyzedAt by viewModel.lastAnalyzedAt.collectAsState()
 
     LaunchedEffect(packageName) {
         viewModel.analyzeApp(packageName)
@@ -103,9 +106,13 @@ fun DetailScreen(
                 }
                 is AnalysisState.Success -> {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (state.fromCache) {
+                        if (state.fromCache && lastAnalyzedAt != null) {
+                            val dateStr = remember(lastAnalyzedAt) {
+                                SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                                    .format(lastAnalyzedAt!!)
+                            }
                             Text(
-                                text = "Из кэша",
+                                text = "Из кэша: $dateStr",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier

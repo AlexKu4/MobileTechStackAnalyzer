@@ -23,12 +23,16 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     private val _analysisState = MutableStateFlow<AnalysisState>(AnalysisState.Idle)
     val analysisState: StateFlow<AnalysisState> = _analysisState.asStateFlow()
 
+    private val _lastAnalyzedAt = MutableStateFlow<Long?>(null)
+    val lastAnalyzedAt: StateFlow<Long?> = _lastAnalyzedAt.asStateFlow()
+
     fun analyzeApp(packageName: String) {
         viewModelScope.launch {
             val cached = repository.getCached(packageName)
             if (cached != null) {
                 // Показываем кэш сразу, чтобы экран не был пустым пока идёт свежий анализ
                 _analysisState.value = AnalysisState.Success(cached, fromCache = true)
+                _lastAnalyzedAt.value = repository.getLastAnalyzedAt(packageName)
             } else {
                 _analysisState.value = AnalysisState.Loading
             }
