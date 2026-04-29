@@ -2,59 +2,41 @@ package com.example.mobiletechstack.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.mobiletechstack.domain.model.AppInfo
 import com.example.mobiletechstack.ui.components.AppCard
 import com.example.mobiletechstack.utils.formatSize
-import com.example.mobiletechstack.utils.getInstalledApps
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppListScreen(
-    onAppClick: (packageName: String, appName: String) -> Unit
+    listState: LazyListState,
+    onAppClick: (packageName: String, appName: String) -> Unit,
+    viewModel: AppsListViewModel = viewModel()
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val allApps by viewModel.allApps.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    var allApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                isLoading = true
-                errorMessage = null
-                allApps = withContext(Dispatchers.IO) {
-                    context.packageManager.getInstalledApps()
-                }
-                isLoading = false
-            } catch (e: Exception) {
-                errorMessage = "Load error: ${e.message}"
-                isLoading = false
-            }
-        }
-    }
-
     val filteredApps = remember(allApps, searchQuery) {
         if (searchQuery.isBlank()) allApps
-        else allApps.filter { it.appName.contains(searchQuery, ignoreCase = true) || it.packageName.contains(searchQuery, ignoreCase = true) }
+        else allApps.filter {
+            it.appName.contains(searchQuery, ignoreCase = true) ||
+            it.packageName.contains(searchQuery, ignoreCase = true)
+        }
     }
 
     Scaffold(
@@ -126,21 +108,7 @@ fun AppListScreen(
                     ) {
                         Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = {
-                            scope.launch {
-                                try {
-                                    isLoading = true
-                                    errorMessage = null
-                                    allApps = withContext(Dispatchers.IO) {
-                                        context.packageManager.getInstalledApps()
-                                    }
-                                    isLoading = false
-                                } catch (e: Exception) {
-                                    errorMessage = "Error: ${e.message}"
-                                    isLoading = false
-                                }
-                            }
-                        }) {
+                        Button(onClick = { viewModel.loadApps() }) {
                             Text("Retry")
                         }
                     }
@@ -153,6 +121,7 @@ fun AppListScreen(
                 }
                 else -> {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
@@ -173,30 +142,3 @@ fun AppListScreen(
     }
 }
 
-@Composable
-fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier,
-        placeholder = { Text("Search by app name or package") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear")
-                }
-            }
-        },
-        singleLine = true,
-        shape = MaterialTheme.shapes.medium,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-        )
-    )
-}

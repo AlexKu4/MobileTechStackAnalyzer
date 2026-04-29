@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.example.mobiletechstack.ui.screens.AppListScreen
 import com.example.mobiletechstack.ui.detail.DetailScreen
 import com.example.mobiletechstack.ui.theme.MyApplicationTheme
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.AppList) }
+    val listState = rememberLazyListState()
 
     BackHandler(enabled = currentScreen is Screen.Detail) {
         currentScreen = Screen.AppList
@@ -40,6 +42,7 @@ fun AppNavigation() {
     when (val screen = currentScreen) {
         is Screen.AppList -> {
             AppListScreen(
+                listState = listState,
                 onAppClick = { packageName, appName ->
                     currentScreen = Screen.Detail(packageName, appName)
                 }
