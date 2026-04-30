@@ -1,6 +1,10 @@
 package com.example.mobiletechstack.ui.detail
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.Drawable
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -12,6 +16,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,6 +59,8 @@ fun DetailScreen(
 ) {
     val analysisState by viewModel.analysisState.collectAsState()
     val lastAnalyzedAt by viewModel.lastAnalyzedAt.collectAsState()
+    val context = LocalContext.current
+    var showShareMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(packageName) {
         viewModel.analyzeApp(packageName)
@@ -66,6 +73,36 @@ fun DetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    val successState = analysisState as? AnalysisState.Success
+                    IconButton(
+                        onClick = { showShareMenu = true },
+                        enabled = successState != null
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Share")
+                    }
+                    DropdownMenu(
+                        expanded = showShareMenu,
+                        onDismissRequest = { showShareMenu = false }
+                    ) {
+                        if (successState != null) {
+                            DropdownMenuItem(
+                                text = { Text("Share as Text") },
+                                onClick = {
+                                    showShareMenu = false
+                                    shareAsText(context, buildTextReport(successState.result))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Save as HTML") },
+                                onClick = {
+                                    showShareMenu = false
+                                    shareAsHtml(context, buildHtmlReport(successState.result), successState.result.appName)
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -687,4 +724,231 @@ private fun InfoRowCompact(label: String, value: String) {
             color = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
+}
+
+fun buildTextReport(result: AnalysisResult): String {
+    val date = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(System.currentTimeMillis())
+    val versionInfo = result.versionInfo
+    val security = result.securityFlags
+
+    val librariesSection = if (result.detectedLibraries.isEmpty()) {
+        "No libraries detected"
+    } else {
+        result.detectedLibraries
+            .groupBy { it.category }
+            .entries
+            .sortedBy { it.key.displayName }
+            .joinToString("\n") { (category, libs) ->
+                "${category.displayName}: ${libs.joinToString(", ") { it.name }}"
+            }
+    }
+
+    val dangerousCategories = setOf(
+        PermissionCategory.CAMERA,
+        PermissionCategory.LOCATION,
+        PermissionCategory.CONTACTS,
+        PermissionCategory.PHONE,
+        PermissionCategory.STORAGE,
+        PermissionCategory.MICROPHONE
+    )
+    val grantedCount = result.permissions.count { it.granted }
+    val notGrantedCount = result.permissions.size - grantedCount
+    val dangerousPerms = result.permissions.filter { it.category in dangerousCategories }
+    val dangerousSection = if (dangerousPerms.isEmpty()) {
+        "None detected"
+    } else {
+        dangerousPerms.joinToString("\n") { it.name.substringAfterLast('.') }
+    }
+
+    return buildString {
+        appendLine("MobileTechStack Analysis")
+        appendLine("========================")
+        appendLine()
+        appendLine("App: ${result.appName}")
+        appendLine("Package: ${result.packageName}")
+        appendLine("Size: ${result.apkSize.formatSize()}")
+        appendLine("Date: $date")
+        appendLine()
+        appendLine("Tech Stack")
+        appendLine("----------")
+        appendLine("Framework: ${result.frameworkInfo?.type?.displayName ?: result.framework}")
+        appendLine("Language: ${result.languageInfo?.primary?.displayName ?: result.language}")
+        appendLine("Primary ABI: ${result.primaryAbi}")
+        appendLine("64-bit: ${if (result.is64Bit) "Yes" else "No"}")
+        appendLine("Obfuscation: ${if (result.hasObfuscation) "Detected" else "Not detected"}")
+        appendLine()
+        appendLine("Version")
+        appendLine("-------")
+        appendLine("Version: ${versionInfo?.versionName ?: "Unknown"} (${versionInfo?.versionCode ?: "Unknown"})")
+        appendLine("Min SDK: ${versionInfo?.minSdkVersion ?: "Unknown"}")
+        appendLine("Target SDK: ${versionInfo?.targetSdkVersion ?: "Unknown"}")
+        appendLine()
+        appendLine("Security")
+        appendLine("--------")
+        appendLine("Debuggable: ${if (security?.isDebuggable == true) "Yes" else "No"}")
+        appendLine("Allow Backup: ${if (security?.allowBackup == true) "Yes" else "No"}")
+        appendLine("Cleartext Traffic: ${if (security?.usesCleartextTraffic == true) "Yes" else "No"}")
+        appendLine()
+        appendLine("Libraries (${result.detectedLibraries.size})")
+        appendLine("-".repeat(12 + result.detectedLibraries.size.toString().length))
+        appendLine(librariesSection)
+        appendLine()
+        appendLine("Permissions (${result.permissions.size})")
+        appendLine("-".repeat(14 + result.permissions.size.toString().length))
+        appendLine("Granted: $grantedCount")
+        appendLine("Not granted: $notGrantedCount")
+        appendLine()
+        appendLine("Dangerous permissions:")
+        appendLine(dangerousSection)
+        appendLine()
+        appendLine("---")
+        append("Analyzed by MobileTechStack")
+    }
+}
+
+fun buildHtmlReport(result: AnalysisResult): String {
+    val date = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(System.currentTimeMillis())
+    val versionInfo = result.versionInfo
+    val security = result.securityFlags
+
+    val dangerousCategories = setOf(
+        PermissionCategory.CAMERA,
+        PermissionCategory.LOCATION,
+        PermissionCategory.CONTACTS,
+        PermissionCategory.PHONE,
+        PermissionCategory.STORAGE,
+        PermissionCategory.MICROPHONE
+    )
+    val grantedCount = result.permissions.count { it.granted }
+    val notGrantedCount = result.permissions.size - grantedCount
+    val dangerousPerms = result.permissions.filter { it.category in dangerousCategories }
+
+    val librariesHtml = if (result.detectedLibraries.isEmpty()) {
+        "<p class=\"empty\">No libraries detected</p>"
+    } else {
+        result.detectedLibraries
+            .groupBy { it.category }
+            .entries
+            .sortedBy { it.key.displayName }
+            .joinToString("\n") { (category, libs) ->
+                """<div class="lib-group">
+                  <span class="lib-category">${category.displayName}:</span>
+                  ${libs.joinToString(", ") { "<span class=\"lib-name\">${it.name}</span>" }}
+                </div>"""
+            }
+    }
+
+    val dangerousHtml = if (dangerousPerms.isEmpty()) {
+        "<p class=\"empty\">None detected</p>"
+    } else {
+        dangerousPerms.joinToString("\n") { perm ->
+            "<div class=\"perm-dangerous\">${perm.name.substringAfterLast('.')}</div>"
+        }
+    }
+
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MobileTechStack — ${result.appName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fff; font-family: sans-serif; color: #212121; padding: 16px; }
+  h1 { font-size: 1.4rem; color: #1976D2; margin-bottom: 4px; }
+  .subtitle { font-size: 0.85rem; color: #757575; margin-bottom: 16px; }
+  .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); padding: 16px; margin-bottom: 12px; }
+  .card h2 { font-size: 1rem; color: #1976D2; margin-bottom: 12px; border-bottom: 1px solid #E3F2FD; padding-bottom: 6px; }
+  .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #F5F5F5; }
+  .row:last-child { border-bottom: none; }
+  .label { font-size: 0.8rem; color: #757575; }
+  .value { font-size: 0.85rem; color: #212121; font-weight: 500; text-align: right; max-width: 60%; word-break: break-all; }
+  .lib-group { margin-bottom: 8px; font-size: 0.85rem; }
+  .lib-category { font-weight: 600; color: #1976D2; }
+  .lib-name { color: #424242; }
+  .perm-stats { display: flex; gap: 16px; margin-bottom: 12px; }
+  .stat-badge { background: #E3F2FD; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; color: #1976D2; font-weight: 600; }
+  .perm-dangerous { color: #D32F2F; font-size: 0.85rem; padding: 3px 0; }
+  .danger-label { font-size: 0.85rem; font-weight: 600; color: #D32F2F; margin-bottom: 6px; }
+  .empty { font-size: 0.85rem; color: #9E9E9E; font-style: italic; }
+  .footer { text-align: center; font-size: 0.75rem; color: #9E9E9E; margin-top: 8px; }
+  @media (max-width: 480px) { .row { flex-direction: column; gap: 2px; } .value { text-align: left; max-width: 100%; } }
+</style>
+</head>
+<body>
+
+<h1>MobileTechStack Analysis</h1>
+<p class="subtitle">Analyzed by MobileTechStack</p>
+
+<div class="card">
+  <h2>App Info</h2>
+  <div class="row"><span class="label">App</span><span class="value">${result.appName}</span></div>
+  <div class="row"><span class="label">Package</span><span class="value">${result.packageName}</span></div>
+  <div class="row"><span class="label">APK Size</span><span class="value">${result.apkSize.formatSize()}</span></div>
+  <div class="row"><span class="label">Analyzed</span><span class="value">$date</span></div>
+</div>
+
+<div class="card">
+  <h2>Tech Stack</h2>
+  <div class="row"><span class="label">Framework</span><span class="value">${result.frameworkInfo?.type?.displayName ?: result.framework}</span></div>
+  <div class="row"><span class="label">Language</span><span class="value">${result.languageInfo?.primary?.displayName ?: result.language}</span></div>
+  <div class="row"><span class="label">Primary ABI</span><span class="value">${result.primaryAbi}</span></div>
+  <div class="row"><span class="label">64-bit</span><span class="value">${if (result.is64Bit) "Yes" else "No"}</span></div>
+  <div class="row"><span class="label">Obfuscation</span><span class="value">${if (result.hasObfuscation) "Detected" else "Not detected"}</span></div>
+</div>
+
+<div class="card">
+  <h2>Version</h2>
+  <div class="row"><span class="label">Version</span><span class="value">${versionInfo?.versionName ?: "Unknown"} (${versionInfo?.versionCode ?: "Unknown"})</span></div>
+  <div class="row"><span class="label">Min SDK</span><span class="value">${versionInfo?.minSdkVersion ?: "Unknown"}</span></div>
+  <div class="row"><span class="label">Target SDK</span><span class="value">${versionInfo?.targetSdkVersion ?: "Unknown"}</span></div>
+</div>
+
+<div class="card">
+  <h2>Security</h2>
+  <div class="row"><span class="label">Debuggable</span><span class="value">${if (security?.isDebuggable == true) "Yes" else "No"}</span></div>
+  <div class="row"><span class="label">Allow Backup</span><span class="value">${if (security?.allowBackup == true) "Yes" else "No"}</span></div>
+  <div class="row"><span class="label">Cleartext Traffic</span><span class="value">${if (security?.usesCleartextTraffic == true) "Yes" else "No"}</span></div>
+</div>
+
+<div class="card">
+  <h2>Libraries (${result.detectedLibraries.size})</h2>
+  $librariesHtml
+</div>
+
+<div class="card">
+  <h2>Permissions (${result.permissions.size})</h2>
+  <div class="perm-stats">
+    <span class="stat-badge">Granted: $grantedCount</span>
+    <span class="stat-badge">Not granted: $notGrantedCount</span>
+  </div>
+  <div class="danger-label">Dangerous permissions:</div>
+  $dangerousHtml
+</div>
+
+<p class="footer">Analyzed by MobileTechStack</p>
+
+</body>
+</html>"""
+}
+
+fun shareAsText(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share via"))
+}
+
+fun shareAsHtml(context: Context, html: String, appName: String) {
+    val safeName = appName.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+    val file = File(context.cacheDir, "${safeName}_analysis.html")
+    file.writeText(html)
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/html"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share via"))
 }
