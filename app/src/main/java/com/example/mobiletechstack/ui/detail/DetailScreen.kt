@@ -14,8 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -53,7 +51,6 @@ import androidx.compose.runtime.getValue
 @Composable
 fun DetailScreen(
     packageName: String,
-    appName: String,
     onBackClick: () -> Unit,
     viewModel: DetailViewModel = viewModel()
 ) {
@@ -207,7 +204,7 @@ private fun OverviewTab(result: AnalysisResult, packageName: String) {
                 val pm = context.packageManager
                 val appInfo = pm.getApplicationInfo(packageName, 0)
                 appIcon = appInfo.loadIcon(pm)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
             }
         }
     }
@@ -515,7 +512,7 @@ private fun PermissionsSection(permissions: List<PermissionInfo>) {
                     onFilterChange = { grantedFilter = it },
                     permissions = permissions
                 )
-                Divider()
+                HorizontalDivider()
                 val filtered = when (grantedFilter) {
                     GrantedFilter.ALL -> permissions
                     GrantedFilter.GRANTED -> permissions.filter { it.granted }
