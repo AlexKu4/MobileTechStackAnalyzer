@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 @Composable
 fun DetailScreen(
     packageName: String,
+    appName: String,
     onBackClick: () -> Unit,
     viewModel: DetailViewModel = viewModel()
 ) {
