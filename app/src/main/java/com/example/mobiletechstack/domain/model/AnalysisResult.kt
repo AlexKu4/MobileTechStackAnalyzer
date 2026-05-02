@@ -15,6 +15,7 @@ data class AnalysisResult(
     val versionInfo: AppVersionInfo? = null,
     val securityFlags: SecurityFlags? = null,
     val detectedLibraries: List<DetectedLibrary> = emptyList(),
+    val unknownPackages: List<String> = emptyList(),
     val frameworkInfo: FrameworkInfo? = null,
     val languageInfo: LanguageInfo? = null,
     val hasObfuscation: Boolean

@@ -36,7 +36,7 @@ class APKAnalyzer(private val context: Context) {
 
             val frameworkInfoDeferred = async { frameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs, dexClasses) }
             val languageInfoDeferred = async { languageDetector.detectLanguagesDetailed(apkPath, nativeLibs, dexClasses) }
-            val detectedLibrariesDeferred = async { dexAnalyzer.detectLibraries(apkPath, dexClasses) }
+            val detectionResultDeferred = async { dexAnalyzer.detectLibrariesAndUnknown(apkPath, dexClasses) }
 
             val frameworkInfo = frameworkInfoDeferred.await()
             val framework = frameworkInfo.type.displayName
@@ -53,7 +53,9 @@ class APKAnalyzer(private val context: Context) {
                 else -> "Unknown"
             }
 
-            val detectedLibraries = detectedLibrariesDeferred.await()
+            val detectionResult = detectionResultDeferred.await()
+            val detectedLibraries = detectionResult.detectedLibraries
+            val unknownPackages = detectionResult.unknownPackages
             val versionInfo = versionInfoDeferred.await()
             val securityFlags = securityFlagsDeferred.await()
             val permissions = permissionsDeferred.await()
@@ -80,6 +82,7 @@ class APKAnalyzer(private val context: Context) {
                 versionInfo,
                 securityFlags,
                 detectedLibraries,
+                unknownPackages,
                 frameworkInfo,
                 languageInfo,
                 hasObfuscation
