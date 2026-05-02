@@ -165,7 +165,7 @@ fun DetailScreen(
 
 @Composable
 private fun DetailTabs(result: AnalysisResult, packageName: String) {
-    val tabs = listOf("Overview", "Security", "Permissions", "Libraries", "Native")
+    val tabs = listOf("Overview", "Security", "Permissions", "Libraries", "Native", "Unknown")
     var selectedTab by remember { mutableStateOf(0) }
 
     Column {
@@ -189,6 +189,7 @@ private fun DetailTabs(result: AnalysisResult, packageName: String) {
             2 -> PermissionsTab(result.permissions)
             3 -> LibrariesTab(result.detectedLibraries)
             4 -> NativeLibrariesTab(result.nativeLibraries)
+            5 -> UnknownTab(result.unknownPackages)
         }
     }
 }
@@ -465,6 +466,40 @@ private fun NativeLibrariesTab(nativeLibs: List<LibraryInfo>) {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UnknownTab(unknownPackages: List<String>) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Unknown Packages (${unknownPackages.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (unknownPackages.isEmpty()) {
+                        Text("No unknown packages found. All libraries detected.")
+                    } else {
+                        Text("The following package prefixes were not recognized by any pattern.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        unknownPackages.forEach { pkg ->
+                            Text(
+                                text = pkg,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
