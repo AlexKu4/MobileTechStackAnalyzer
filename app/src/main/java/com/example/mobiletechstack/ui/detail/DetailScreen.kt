@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -475,6 +476,7 @@ private fun NativeLibrariesTab(nativeLibs: List<LibraryInfo>) {
 
 @Composable
 private fun UnknownTab(unknownPackages: List<String>) {
+    val safeList = unknownPackages ?: emptyList()
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
             Card(
@@ -483,26 +485,25 @@ private fun UnknownTab(unknownPackages: List<String>) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Unknown Packages (${unknownPackages.size})",
+                        text = "Unknown Packages (${safeList.size})",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (unknownPackages.isEmpty()) {
+                    if (safeList.isEmpty()) {
                         Text("No unknown packages found. All libraries detected.")
                     } else {
                         Text("The following package prefixes were not recognized by any pattern.")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        unknownPackages.forEach { pkg ->
-                            Text(
-                                text = pkg,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            )
-                        }
                     }
                 }
             }
+        }
+        items(safeList) { pkg ->
+            Text(
+                text = pkg,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+            )
         }
     }
 }
