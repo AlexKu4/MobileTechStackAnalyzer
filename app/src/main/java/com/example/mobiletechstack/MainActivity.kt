@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.example.mobiletechstack.ui.screens.AppListScreen
+import com.example.mobiletechstack.ui.compare.CompareScreen
 import com.example.mobiletechstack.ui.detail.DetailScreen
 import com.example.mobiletechstack.ui.theme.MyApplicationTheme
 
@@ -35,7 +36,7 @@ fun AppNavigation() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.AppList) }
     val listState = rememberLazyListState()
 
-    BackHandler(enabled = currentScreen is Screen.Detail) {
+    BackHandler(enabled = currentScreen !is Screen.AppList) {
         currentScreen = Screen.AppList
     }
 
@@ -58,10 +59,45 @@ fun AppNavigation() {
                 }
             )
         }
+
+        is Screen.SelectSecond -> {
+            AppListScreen(
+                listState = listState,
+                selectionMode = true,
+                title = "Выберите второе приложение",
+                onAppClick = { packageName, appName ->
+                    currentScreen = Screen.Compare(
+                        firstPackage = screen.firstPackage,
+                        firstName = screen.firstName,
+                        secondPackage = packageName,
+                        secondName = appName
+                    )
+                }
+            )
+        }
+
+        is Screen.Compare -> {
+            CompareScreen(
+                firstPackage = screen.firstPackage,
+                firstName = screen.firstName,
+                secondPackage = screen.secondPackage,
+                secondName = screen.secondName,
+                onBackClick = {
+                    currentScreen = Screen.AppList
+                }
+            )
+        }
     }
 }
 
 sealed class Screen {
     data object AppList : Screen()
     data class Detail(val packageName: String, val appName: String) : Screen()
+    data class SelectSecond(val firstPackage: String, val firstName: String) : Screen()
+    data class Compare(
+        val firstPackage: String,
+        val firstName: String,
+        val secondPackage: String,
+        val secondName: String
+    ) : Screen()
 }
