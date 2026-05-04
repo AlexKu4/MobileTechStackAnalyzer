@@ -13,6 +13,7 @@ import com.example.mobiletechstack.ui.components.AppCard
 import com.example.mobiletechstack.utils.formatSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Search
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -22,6 +23,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun AppListScreen(
     listState: LazyListState,
     onAppClick: (packageName: String, appName: String) -> Unit,
+    selectionMode: Boolean = false,
+    selectionStep: Int = 1,
+    onAppSelected: ((packageName: String, appName: String) -> Unit)? = null,
+    onCompareClick: (() -> Unit)? = null,
     viewModel: AppsListViewModel = viewModel()
 ) {
     val allApps by viewModel.allApps.collectAsState()
@@ -37,6 +42,12 @@ fun AppListScreen(
             it.appName.contains(searchQuery, ignoreCase = true) ||
             it.packageName.contains(searchQuery, ignoreCase = true)
         }
+    }
+
+    val title = when {
+        selectionMode && selectionStep == 2 -> "Выберите приложение 2"
+        selectionMode -> "Выберите приложение 1"
+        else -> "Mobile TechStack"
     }
 
     Scaffold(
@@ -58,7 +69,7 @@ fun AppListScreen(
                             )
                         )
                     } else {
-                        Text("Mobile TechStack", style = MaterialTheme.typography.titleLarge)
+                        Text(title, style = MaterialTheme.typography.titleLarge)
                     }
                 },
                 navigationIcon = {
@@ -73,6 +84,11 @@ fun AppListScreen(
                 },
                 actions = {
                     if (!isSearchActive) {
+                        if (!selectionMode) {
+                            IconButton(onClick = { onCompareClick?.invoke() }) {
+                                Icon(Icons.Default.Compare, contentDescription = "Compare apps")
+                            }
+                        }
                         IconButton(onClick = { isSearchActive = true }) {
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         }
@@ -132,7 +148,14 @@ fun AppListScreen(
                                 packageName = app.packageName,
                                 versionName = app.versionName,
                                 apkSize = app.apkSize.formatSize(),
-                                onClick = { onAppClick(app.packageName, app.appName) }
+                                showSelectionBadge = selectionMode,
+                                onClick = {
+                                    if (selectionMode && onAppSelected != null) {
+                                        onAppSelected(app.packageName, app.appName)
+                                    } else {
+                                        onAppClick(app.packageName, app.appName)
+                                    }
+                                }
                             )
                         }
                     }

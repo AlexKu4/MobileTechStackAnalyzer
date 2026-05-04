@@ -4,6 +4,8 @@ import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,7 +22,8 @@ fun AppCard(
     packageName: String,
     versionName: String,
     apkSize: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showSelectionBadge: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -78,6 +81,16 @@ fun AppCard(
                     text = apkSize,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
+                )
+            }
+
+            if (showSelectionBadge) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Выбрать",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
