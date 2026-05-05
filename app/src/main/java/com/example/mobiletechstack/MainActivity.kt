@@ -11,8 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.example.mobiletechstack.ui.screens.AppListScreen
-import com.example.mobiletechstack.ui.compare.CompareScreen
-import com.example.mobiletechstack.ui.detail.DetailScreen
+import com.example.mobiletechstack.ui.screens.CompareScreen
+import com.example.mobiletechstack.ui.screens.DetailScreen
 import com.example.mobiletechstack.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {

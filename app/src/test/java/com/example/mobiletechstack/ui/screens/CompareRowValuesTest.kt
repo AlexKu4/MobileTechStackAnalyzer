@@ -1,4 +1,4 @@
-package com.example.mobiletechstack.ui.compare
+package com.example.mobiletechstack.ui.screens
 
 import com.example.mobiletechstack.domain.model.*
 import com.example.mobiletechstack.utils.formatSize

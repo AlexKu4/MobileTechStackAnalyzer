@@ -1,4 +1,4 @@
-package com.example.mobiletechstack.ui.compare
+package com.example.mobiletechstack.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,8 +17,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mobiletechstack.domain.model.AnalysisResult
-import com.example.mobiletechstack.ui.detail.AnalysisState
-import com.example.mobiletechstack.ui.screens.CompareViewModel
 import com.example.mobiletechstack.utils.formatSize
 
 private val ColorLeft = Color(0xFF4CAF50)

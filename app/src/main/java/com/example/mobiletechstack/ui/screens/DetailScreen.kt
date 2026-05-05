@@ -1,4 +1,4 @@
-package com.example.mobiletechstack.ui.detail
+package com.example.mobiletechstack.ui.screens
 
 import android.content.Context
 import android.content.Intent

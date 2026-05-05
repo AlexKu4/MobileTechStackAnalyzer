@@ -1,4 +1,4 @@
-package com.example.mobiletechstack.ui.detail
+package com.example.mobiletechstack.ui.screens
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
