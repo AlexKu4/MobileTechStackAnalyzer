@@ -13,6 +13,7 @@ import com.example.mobiletechstack.ui.components.AppCard
 import com.example.mobiletechstack.utils.formatSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Search
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,8 +25,7 @@ fun AppListScreen(
     listState: LazyListState,
     onAppClick: (packageName: String, appName: String) -> Unit,
     selectionMode: Boolean = false,
-    selectionStep: Int = 1,
-    onAppSelected: ((packageName: String, appName: String) -> Unit)? = null,
+    onBothSelected: ((String, String, String, String) -> Unit)? = null,
     onCompareClick: (() -> Unit)? = null,
     viewModel: AppsListViewModel = viewModel()
 ) {
@@ -36,6 +36,11 @@ fun AppListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
+    var firstPkg by remember { mutableStateOf<String?>(null) }
+    var firstName by remember { mutableStateOf<String?>(null) }
+    var secondPkg by remember { mutableStateOf<String?>(null) }
+    var secondName by remember { mutableStateOf<String?>(null) }
+
     val filteredApps = remember(allApps, searchQuery) {
         if (searchQuery.isBlank()) allApps
         else allApps.filter {
@@ -44,11 +49,7 @@ fun AppListScreen(
         }
     }
 
-    val title = when {
-        selectionMode && selectionStep == 2 -> "Выберите приложение 2"
-        selectionMode -> "Выберите приложение 1"
-        else -> "Mobile TechStack"
-    }
+    val title = if (selectionMode) "Выберите два приложения" else "Mobile TechStack"
 
     Scaffold(
         topBar = {
@@ -99,6 +100,15 @@ fun AppListScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
+        },
+        floatingActionButton = {
+            if (selectionMode && firstPkg != null && secondPkg != null) {
+                ExtendedFloatingActionButton(
+                    onClick = { onBothSelected?.invoke(firstPkg!!, firstName!!, secondPkg!!, secondName!!) },
+                    text = { Text("Сравнить") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) }
+                )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -149,9 +159,23 @@ fun AppListScreen(
                                 versionName = app.versionName,
                                 apkSize = app.apkSize.formatSize(),
                                 showSelectionBadge = selectionMode,
+                                isSelected = app.packageName == firstPkg || app.packageName == secondPkg,
                                 onClick = {
-                                    if (selectionMode && onAppSelected != null) {
-                                        onAppSelected(app.packageName, app.appName)
+                                    if (selectionMode) {
+                                        when (app.packageName) {
+                                            firstPkg -> { firstPkg = null; firstName = null }
+                                            secondPkg -> { secondPkg = null; secondName = null }
+                                            else -> {
+                                                if (firstPkg == null) {
+                                                    firstPkg = app.packageName
+                                                    firstName = app.appName
+                                                } else {
+                                                    // Заменяем второй выбор (или устанавливаем, если пуст)
+                                                    secondPkg = app.packageName
+                                                    secondName = app.appName
+                                                }
+                                            }
+                                        }
                                     } else {
                                         onAppClick(app.packageName, app.appName)
                                     }
@@ -164,4 +188,3 @@ fun AppListScreen(
         }
     }
 }
-

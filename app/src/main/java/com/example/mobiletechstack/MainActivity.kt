@@ -58,9 +58,8 @@ fun AppNavigation() {
                 listState = listState,
                 onAppClick = { _, _ -> },
                 selectionMode = true,
-                selectionStep = 1,
-                onAppSelected = { packageName, appName ->
-                    currentScreen = Screen.SelectSecond(packageName, appName)
+                onBothSelected = { pkg1, name1, pkg2, name2 ->
+                    currentScreen = Screen.Compare(pkg1, name1, pkg2, name2)
                 }
             )
         }
@@ -71,23 +70,6 @@ fun AppNavigation() {
                 appName = screen.appName,
                 onBackClick = {
                     currentScreen = Screen.AppList
-                }
-            )
-        }
-
-        is Screen.SelectSecond -> {
-            AppListScreen(
-                listState = listState,
-                onAppClick = { _, _ -> },
-                selectionMode = true,
-                selectionStep = 2,
-                onAppSelected = { packageName, appName ->
-                    currentScreen = Screen.Compare(
-                        firstPackage = screen.firstPackage,
-                        firstName = screen.firstName,
-                        secondPackage = packageName,
-                        secondName = appName
-                    )
                 }
             )
         }
@@ -111,7 +93,6 @@ sealed class Screen {
     data object AppList : Screen()
     data class Detail(val packageName: String, val appName: String) : Screen()
     data object SelectFirst : Screen()
-    data class SelectSecond(val firstPackage: String, val firstName: String) : Screen()
     data class Compare(
         val firstPackage: String,
         val firstName: String,

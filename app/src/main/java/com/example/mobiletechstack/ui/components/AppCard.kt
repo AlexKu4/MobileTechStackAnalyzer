@@ -4,12 +4,11 @@ import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -23,7 +22,9 @@ fun AppCard(
     versionName: String,
     apkSize: String,
     onClick: () -> Unit,
-    showSelectionBadge: Boolean = false
+    showSelectionBadge: Boolean = false,
+    isSelected: Boolean = false,
+    isDisabled: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -38,7 +39,8 @@ fun AppCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(12.dp)
+                .alpha(if (isDisabled) 0.4f else 1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -86,11 +88,11 @@ fun AppCard(
 
             if (showSelectionBadge) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.AddCircle,
-                    contentDescription = "Выбрать",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = null,
+                    enabled = !isDisabled,
+                    modifier = Modifier.align(Alignment.CenterVertically)
                 )
             }
         }
