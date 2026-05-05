@@ -52,7 +52,6 @@ import androidx.compose.runtime.getValue
 @Composable
 fun DetailScreen(
     packageName: String,
-    appName: String,
     onBackClick: () -> Unit,
     viewModel: DetailViewModel = viewModel()
 ) {
@@ -476,7 +475,6 @@ private fun NativeLibrariesTab(nativeLibs: List<LibraryInfo>) {
 
 @Composable
 private fun UnknownTab(unknownPackages: List<String>) {
-    val safeList = unknownPackages ?: emptyList()
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
             Card(
@@ -485,12 +483,12 @@ private fun UnknownTab(unknownPackages: List<String>) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Unknown Packages (${safeList.size})",
+                        text = "Unknown Packages (${unknownPackages.size})",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (safeList.isEmpty()) {
+                    if (unknownPackages.isEmpty()) {
                         Text("No unknown packages found. All libraries detected.")
                     } else {
                         Text("The following package prefixes were not recognized by any pattern.")
@@ -498,7 +496,7 @@ private fun UnknownTab(unknownPackages: List<String>) {
                 }
             }
         }
-        items(safeList) { pkg ->
+        items(unknownPackages) { pkg ->
             Text(
                 text = pkg,
                 style = MaterialTheme.typography.bodyMedium,

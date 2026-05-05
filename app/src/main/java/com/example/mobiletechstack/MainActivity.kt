@@ -67,7 +67,6 @@ fun AppNavigation() {
         is Screen.Detail -> {
             DetailScreen(
                 packageName = screen.packageName,
-                appName = screen.appName,
                 onBackClick = {
                     currentScreen = Screen.AppList
                 }
