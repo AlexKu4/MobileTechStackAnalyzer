@@ -28,25 +28,19 @@ private val ColorRight = Color(0xFFEF5350)
 private class CompareRowDef(val label: String, val extract: (AnalysisResult) -> String)
 
 private val rowDefs = listOf(
-    CompareRowDef("Фреймворк")   { it.frameworkInfo?.type?.displayName ?: it.framework },
-    CompareRowDef("Язык")        { it.languageInfo?.primary?.displayName ?: it.language },
-    CompareRowDef("Primary ABI") { it.primaryAbi },
-    CompareRowDef("64-bit")      { if (it.is64Bit) "Yes" else "No" },
-    CompareRowDef("Обфускация")  { if (it.hasObfuscation) "Yes" else "No" },
-    CompareRowDef("Версия")      { it.versionInfo?.versionName ?: "-" },
-    CompareRowDef("Min SDK")     { it.versionInfo?.minSdkVersion?.toString() ?: "-" },
-    CompareRowDef("APK Size")    { it.apkSize.formatSize() },
-    CompareRowDef("Библиотеки")  { it.detectedLibraries.size.toString() },
-    CompareRowDef("Разрешения")  { it.permissions.size.toString() },
-    CompareRowDef("Debuggable")  { if (it.securityFlags?.isDebuggable == true) "Yes" else "No" },
+    CompareRowDef("Фреймворк")    { it.frameworkInfo?.type?.displayName ?: it.framework },
+    CompareRowDef("Язык")         { it.languageInfo?.primary?.displayName ?: it.language },
+    CompareRowDef("Primary ABI")  { it.primaryAbi },
+    CompareRowDef("64-bit")       { if (it.is64Bit) "Yes" else "No" },
+    CompareRowDef("Обфускация")   { if (it.hasObfuscation) "Yes" else "No" },
+    CompareRowDef("Версия")       { it.versionInfo?.versionName ?: "-" },
+    CompareRowDef("Min SDK")      { it.versionInfo?.minSdkVersion?.toString() ?: "-" },
+    CompareRowDef("APK Size")     { it.apkSize.formatSize() },
+    CompareRowDef("Библиотеки")   { it.detectedLibraries.size.toString() },
+    CompareRowDef("Разрешения")   { it.permissions.size.toString() },
+    CompareRowDef("Debuggable")   { if (it.securityFlags?.isDebuggable == true) "Yes" else "No" },
     CompareRowDef("Allow Backup") { if (it.securityFlags?.allowBackup == true) "Yes" else "No" },
 )
-
-private sealed class CompareCell {
-    data class Value(val text: String) : CompareCell()
-    object Loading : CompareCell()
-    object Err : CompareCell()
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +59,9 @@ fun CompareScreen(
         viewModel.analyze(firstPackage, secondPackage)
     }
 
+    val bothLoaded = firstState is AnalysisState.Success && secondState is AnalysisState.Success
+    val hasError = firstState is AnalysisState.Error || secondState is AnalysisState.Error
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -81,48 +78,62 @@ fun CompareScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            AppNamesHeader(firstName, secondName)
-            HorizontalDivider()
-
-            val anyLoaded = firstState is AnalysisState.Success || firstState is AnalysisState.Error ||
-                            secondState is AnalysisState.Success || secondState is AnalysisState.Error
-
-            if (!anyLoaded) {
-                // Оба ещё грузятся — показываем два индикатора рядом
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(48.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(color = ColorLeft)
-                        CircularProgressIndicator(color = ColorRight)
-                    }
-                }
-            } else {
-                val firstResult = (firstState as? AnalysisState.Success)?.result
-                val secondResult = (secondState as? AnalysisState.Success)?.result
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+        when {
+            hasError -> {
+                val errorMsg = (firstState as? AnalysisState.Error)?.message
+                    ?: (secondState as? AnalysisState.Error)?.message
+                    ?: "Ошибка анализа"
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(rowDefs, key = { it.label }) { rowDef ->
-                        val leftCell = when {
-                            firstResult != null -> CompareCell.Value(rowDef.extract(firstResult))
-                            firstState is AnalysisState.Error -> CompareCell.Err
-                            else -> CompareCell.Loading
+                    Text(
+                        text = errorMsg,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(24.dp)
+                    )
+                }
+            }
+            !bothLoaded -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(16.dp))
+                    Text("Анализ приложений...")
+                }
+            }
+            else -> {
+                val firstResult = (firstState as AnalysisState.Success).result
+                val secondResult = (secondState as AnalysisState.Success).result
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    AppNamesHeader(firstName, secondName)
+                    HorizontalDivider()
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(rowDefs, key = { it.label }) { rowDef ->
+                            CompareRow(
+                                label = rowDef.label,
+                                leftValue = rowDef.extract(firstResult),
+                                rightValue = rowDef.extract(secondResult)
+                            )
                         }
-                        val rightCell = when {
-                            secondResult != null -> CompareCell.Value(rowDef.extract(secondResult))
-                            secondState is AnalysisState.Error -> CompareCell.Err
-                            else -> CompareCell.Loading
-                        }
-                        CompareRow(label = rowDef.label, leftCell = leftCell, rightCell = rightCell)
                     }
                 }
             }
@@ -163,20 +174,11 @@ private fun AppNamesHeader(firstName: String, secondName: String) {
 }
 
 @Composable
-private fun CompareRow(label: String, leftCell: CompareCell, rightCell: CompareCell) {
-    val leftValue = (leftCell as? CompareCell.Value)?.text
-    val rightValue = (rightCell as? CompareCell.Value)?.text
-    // Выделяем цветом только если оба значения известны и различаются
-    val valuesMatch = leftValue != null && rightValue != null && leftValue == rightValue
+private fun CompareRow(label: String, leftValue: String, rightValue: String) {
+    val valuesMatch = leftValue == rightValue
 
-    val leftColor = when {
-        leftCell !is CompareCell.Value || valuesMatch -> MaterialTheme.colorScheme.onSurface
-        else -> ColorLeft
-    }
-    val rightColor = when {
-        rightCell !is CompareCell.Value || valuesMatch -> MaterialTheme.colorScheme.onSurface
-        else -> ColorRight
-    }
+    val leftColor = if (valuesMatch) MaterialTheme.colorScheme.onSurface else ColorLeft
+    val rightColor = if (valuesMatch) MaterialTheme.colorScheme.onSurface else ColorRight
 
     Row(
         modifier = Modifier
@@ -184,27 +186,16 @@ private fun CompareRow(label: String, leftCell: CompareCell, rightCell: CompareC
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Левое значение
-        Box(modifier = Modifier.weight(2f), contentAlignment = Alignment.CenterStart) {
-            when (leftCell) {
-                is CompareCell.Value -> Text(
-                    text = leftCell.text,
-                    color = leftColor,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (!valuesMatch && leftValue != null) FontWeight.Medium else FontWeight.Normal,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                CompareCell.Loading -> CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp
-                )
-                CompareCell.Err -> Text("-", color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+        Text(
+            text = leftValue,
+            modifier = Modifier.weight(2f),
+            color = leftColor,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (!valuesMatch) FontWeight.Medium else FontWeight.Normal,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
-        // Название параметра по центру
         Text(
             text = label,
             modifier = Modifier.weight(1.5f),
@@ -215,27 +206,16 @@ private fun CompareRow(label: String, leftCell: CompareCell, rightCell: CompareC
             overflow = TextOverflow.Ellipsis
         )
 
-        // Правое значение
-        Box(modifier = Modifier.weight(2f), contentAlignment = Alignment.CenterEnd) {
-            when (rightCell) {
-                is CompareCell.Value -> Text(
-                    text = rightCell.text,
-                    color = rightColor,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (!valuesMatch && rightValue != null) FontWeight.Medium else FontWeight.Normal,
-                    textAlign = TextAlign.End,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                CompareCell.Loading -> CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp
-                )
-                CompareCell.Err -> Text("-", color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.End)
-            }
-        }
+        Text(
+            text = rightValue,
+            modifier = Modifier.weight(2f),
+            color = rightColor,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (!valuesMatch) FontWeight.Medium else FontWeight.Normal,
+            textAlign = TextAlign.End,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 
     HorizontalDivider(
