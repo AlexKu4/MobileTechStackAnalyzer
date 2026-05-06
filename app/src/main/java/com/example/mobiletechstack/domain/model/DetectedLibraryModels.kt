@@ -13,5 +13,7 @@ enum class LibraryCategory(val displayName: String) {
     PAYMENT("Payment"),
     UI("UI Libraries"),
     REACTIVE("Reactive Programming"),
+    DATABASES("Databases & ORM"),
+    NETWORKING("Networking"),
     OTHER("Other")
 }
