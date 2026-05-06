@@ -53,6 +53,7 @@ import androidx.compose.runtime.getValue
 fun DetailScreen(
     packageName: String,
     onBackClick: () -> Unit,
+    cacheOnly: Boolean = false,
     viewModel: DetailViewModel = viewModel()
 ) {
     val analysisState by viewModel.analysisState.collectAsState()
@@ -61,7 +62,8 @@ fun DetailScreen(
     var showShareMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(packageName) {
-        viewModel.analyzeApp(packageName)
+        if (cacheOnly) viewModel.showCached(packageName)
+        else viewModel.analyzeApp(packageName)
     }
 
     Scaffold(

@@ -26,6 +26,19 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     private val _lastAnalyzedAt = MutableStateFlow<Long?>(null)
     val lastAnalyzedAt: StateFlow<Long?> = _lastAnalyzedAt.asStateFlow()
 
+    fun showCached(packageName: String) {
+        viewModelScope.launch {
+            _analysisState.value = AnalysisState.Loading
+            val cached = repository.getCached(packageName)
+            if (cached != null) {
+                _lastAnalyzedAt.value = repository.getLastAnalyzedAt(packageName)
+                _analysisState.value = AnalysisState.Success(cached, fromCache = true)
+            } else {
+                _analysisState.value = AnalysisState.Error("Нет данных в кэше")
+            }
+        }
+    }
+
     fun analyzeApp(packageName: String) {
         viewModelScope.launch {
             val cached = repository.getCached(packageName)

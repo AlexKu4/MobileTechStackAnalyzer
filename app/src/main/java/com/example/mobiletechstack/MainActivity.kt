@@ -78,6 +78,7 @@ fun AppNavigation() {
         is Screen.Detail -> {
             DetailScreen(
                 packageName = screen.packageName,
+                cacheOnly = screen.cacheOnly,
                 onBackClick = {
                     currentScreen = Screen.AppList
                 }
@@ -111,7 +112,7 @@ fun AppNavigation() {
             HistoryScreen(
                 onBackClick = { currentScreen = Screen.AppList },
                 onAppClick = { packageName, appName ->
-                    currentScreen = Screen.Detail(packageName, appName)
+                    currentScreen = Screen.Detail(packageName, appName, cacheOnly = true)
                 }
             )
         }
@@ -133,7 +134,7 @@ fun AppNavigation() {
 
 sealed class Screen {
     data object AppList : Screen()
-    data class Detail(val packageName: String, val appName: String) : Screen()
+    data class Detail(val packageName: String, val appName: String, val cacheOnly: Boolean = false) : Screen()
     data object SelectFirst : Screen()
     data class Compare(
         val firstPackage: String,
