@@ -80,4 +80,15 @@ class AnalysisResultDaoTest {
 
         assertNull(dao.getByPackageName("com.example.app"))
     }
+
+    @Test
+    fun trimToLimit_keepsOnlyMostRecentEntries() = runBlocking {
+        repeat(5) { i ->
+            dao.upsert(AnalysisResultEntity("com.app.$i", i.toLong() * 1000, "{}"))
+        }
+        dao.trimToLimit(3)
+        val remaining = dao.getAllSortedByDate()
+        assertEquals(3, remaining.size)
+        assertEquals(listOf("com.app.4", "com.app.3", "com.app.2"), remaining.map { it.packageName })
+    }
 }

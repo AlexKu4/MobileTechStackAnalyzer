@@ -86,4 +86,40 @@ class AnalysisRepositoryTest {
         }
         assertTrue(dao.storage.size <= AnalysisRepository.CACHE_LIMIT)
     }
+
+    @Test
+    fun showCached_cachedResultAndTimestampAreConsistent() = runBlocking {
+        val result = makeResult()
+        repository.save(result)
+        val cached = repository.getCached(result.packageName)
+        val analyzedAt = repository.getLastAnalyzedAt(result.packageName)
+        assertEquals(result, cached)
+        assertNotNull(analyzedAt)
+        assertTrue(analyzedAt!! > 0)
+    }
+
+    @Test
+    fun showCached_returnsNullWhenNothingSaved() = runBlocking {
+        assertNull(repository.getCached("com.not.saved"))
+        assertNull(repository.getLastAnalyzedAt("com.not.saved"))
+    }
+
+    @Test
+    fun getHistory_skipsCorruptJsonEntries() = runBlocking {
+        repository.save(makeResult("com.app.good"))
+        dao.upsert(AnalysisResultEntity("com.app.bad", System.currentTimeMillis(), "not-valid-json{{{"))
+        val history = repository.getHistory()
+        assertEquals(1, history.size)
+        assertEquals("com.app.good", history.first().result.packageName)
+    }
+
+    @Test
+    fun getHistory_isSortedNewestFirst() = runBlocking {
+        val gson = com.google.gson.Gson()
+        dao.upsert(AnalysisResultEntity("com.app.old", 1000L, gson.toJson(makeResult("com.app.old"))))
+        dao.upsert(AnalysisResultEntity("com.app.new", 2000L, gson.toJson(makeResult("com.app.new"))))
+        val history = repository.getHistory()
+        assertEquals("com.app.new", history[0].result.packageName)
+        assertEquals("com.app.old", history[1].result.packageName)
+    }
 }
