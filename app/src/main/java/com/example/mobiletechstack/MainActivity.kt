@@ -4,15 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.example.mobiletechstack.ui.screens.AppListScreen
 import com.example.mobiletechstack.ui.screens.CompareScreen
 import com.example.mobiletechstack.ui.screens.DetailScreen
+import com.example.mobiletechstack.ui.screens.HistoryScreen
 import com.example.mobiletechstack.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -49,6 +54,12 @@ fun AppNavigation() {
                 },
                 onCompareClick = {
                     currentScreen = Screen.SelectFirst
+                },
+                onHistoryClick = {
+                    currentScreen = Screen.History
+                },
+                onAnalyzeUrlClick = {
+                    currentScreen = Screen.AnalyzeUrl
                 }
             )
         }
@@ -69,6 +80,38 @@ fun AppNavigation() {
                 packageName = screen.packageName,
                 onBackClick = {
                     currentScreen = Screen.AppList
+                }
+            )
+        }
+
+        is Screen.AnalyzeUrl -> {
+            Scaffold(
+                topBar = {
+                    @OptIn(ExperimentalMaterial3Api::class)
+                    TopAppBar(
+                        title = { Text("Анализ APK по ссылке") },
+                        navigationIcon = {
+                            IconButton(onClick = { currentScreen = Screen.AppList }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                            }
+                        }
+                    )
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Скоро", style = MaterialTheme.typography.titleLarge)
+                }
+            }
+        }
+
+        is Screen.History -> {
+            HistoryScreen(
+                onBackClick = { currentScreen = Screen.AppList },
+                onAppClick = { packageName, appName ->
+                    currentScreen = Screen.Detail(packageName, appName)
                 }
             )
         }
@@ -98,4 +141,6 @@ sealed class Screen {
         val secondPackage: String,
         val secondName: String
     ) : Screen()
+    data object AnalyzeUrl : Screen()
+    data object History : Screen()
 }

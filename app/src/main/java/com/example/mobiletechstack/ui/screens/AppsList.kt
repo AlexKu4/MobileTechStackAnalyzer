@@ -15,8 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Compare
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,6 +31,8 @@ fun AppListScreen(
     selectionMode: Boolean = false,
     onBothSelected: ((String, String, String, String) -> Unit)? = null,
     onCompareClick: (() -> Unit)? = null,
+    onHistoryClick: (() -> Unit)? = null,
+    onAnalyzeUrlClick: (() -> Unit)? = null,
     viewModel: AppsListViewModel = viewModel()
 ) {
     val allApps by viewModel.allApps.collectAsState()
@@ -51,136 +57,187 @@ fun AppListScreen(
 
     val title = if (selectionMode) "Выберите два приложения" else "Mobile TechStack"
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    if (isSearchActive) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Search by name or package") },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    } else {
-                        Text(title, style = MaterialTheme.typography.titleLarge)
-                    }
-                },
-                navigationIcon = {
-                    if (isSearchActive) {
-                        IconButton(onClick = {
-                            isSearchActive = false
-                            searchQuery = ""
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    }
-                },
-                actions = {
-                    if (!isSearchActive) {
-                        if (!selectionMode) {
-                            IconButton(onClick = { onCompareClick?.invoke() }) {
-                                Icon(Icons.Default.Compare, contentDescription = "Compare apps")
-                            }
-                        }
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "MobileTechStack",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-            )
-        },
-        floatingActionButton = {
-            if (selectionMode && firstPkg != null && secondPkg != null) {
-                ExtendedFloatingActionButton(
-                    onClick = { onBothSelected?.invoke(firstPkg!!, firstName!!, secondPkg!!, secondName!!) },
-                    text = { Text("Сравнить") },
-                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) }
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Compare, contentDescription = null) },
+                    label = { Text("Сравнение приложений") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onCompareClick?.invoke()
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.History, contentDescription = null) },
+                    label = { Text("История анализов") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onHistoryClick?.invoke()
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Link, contentDescription = null) },
+                    label = { Text("Анализ APK по ссылке") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onAnalyzeUrlClick?.invoke()
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
         }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
-                isLoading -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Loading apps...")
-                    }
-                }
-                errorMessage != null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadApps() }) {
-                            Text("Retry")
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        if (isSearchActive) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("Search by name or package") },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        } else {
+                            Text(title, style = MaterialTheme.typography.titleLarge)
                         }
-                    }
-                }
-                filteredApps.isEmpty() -> {
-                    Text(
-                        text = if (searchQuery.isNotBlank()) "No apps match \"$searchQuery\"" else "No apps found",
-                        modifier = Modifier.align(Alignment.Center)
+                    },
+                    navigationIcon = {
+                        if (isSearchActive) {
+                            IconButton(onClick = {
+                                isSearchActive = false
+                                searchQuery = ""
+                            }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        } else if (!selectionMode) {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Меню")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!isSearchActive) {
+                            IconButton(onClick = { isSearchActive = true }) {
+                                Icon(Icons.Default.Search, contentDescription = "Search")
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            },
+            floatingActionButton = {
+                if (selectionMode && firstPkg != null && secondPkg != null) {
+                    ExtendedFloatingActionButton(
+                        onClick = { onBothSelected?.invoke(firstPkg!!, firstName!!, secondPkg!!, secondName!!) },
+                        text = { Text("Сравнить") },
+                        icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) }
                     )
                 }
-                else -> {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        items(filteredApps) { app ->
-                            AppCard(
-                                icon = app.icon,
-                                appName = app.appName,
-                                packageName = app.packageName,
-                                versionName = app.versionName,
-                                apkSize = app.apkSize.formatSize(),
-                                showSelectionBadge = selectionMode,
-                                isSelected = app.packageName == firstPkg || app.packageName == secondPkg,
-                                onClick = {
-                                    if (selectionMode) {
-                                        when (app.packageName) {
-                                            firstPkg -> { firstPkg = null; firstName = null }
-                                            secondPkg -> { secondPkg = null; secondName = null }
-                                            else -> {
-                                                if (firstPkg == null) {
-                                                    firstPkg = app.packageName
-                                                    firstName = app.appName
-                                                } else {
-                                                    // Заменяем второй выбор (или устанавливаем, если пуст)
-                                                    secondPkg = app.packageName
-                                                    secondName = app.appName
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when {
+                    isLoading -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Loading apps...")
+                        }
+                    }
+                    errorMessage != null -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { viewModel.loadApps() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                    filteredApps.isEmpty() -> {
+                        Text(
+                            text = if (searchQuery.isNotBlank()) "No apps match \"$searchQuery\"" else "No apps found",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(filteredApps) { app ->
+                                AppCard(
+                                    icon = app.icon,
+                                    appName = app.appName,
+                                    packageName = app.packageName,
+                                    versionName = app.versionName,
+                                    apkSize = app.apkSize.formatSize(),
+                                    showSelectionBadge = selectionMode,
+                                    isSelected = app.packageName == firstPkg || app.packageName == secondPkg,
+                                    onClick = {
+                                        if (selectionMode) {
+                                            when (app.packageName) {
+                                                firstPkg -> { firstPkg = null; firstName = null }
+                                                secondPkg -> { secondPkg = null; secondName = null }
+                                                else -> {
+                                                    if (firstPkg == null) {
+                                                        firstPkg = app.packageName
+                                                        firstName = app.appName
+                                                    } else {
+                                                        // Заменяем второй выбор (или устанавливаем, если пуст)
+                                                        secondPkg = app.packageName
+                                                        secondName = app.appName
+                                                    }
                                                 }
                                             }
+                                        } else {
+                                            onAppClick(app.packageName, app.appName)
                                         }
-                                    } else {
-                                        onAppClick(app.packageName, app.appName)
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
