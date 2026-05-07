@@ -16,6 +16,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,6 +49,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.sp
+import com.example.mobiletechstack.domain.model.SecurityScore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +69,7 @@ fun DetailScreen(
 ) {
     val analysisState by viewModel.analysisState.collectAsState()
     val lastAnalyzedAt by viewModel.lastAnalyzedAt.collectAsState()
+    val securityScore by viewModel.securityScore.collectAsState()
     val context = LocalContext.current
     var showShareMenu by remember { mutableStateOf(false) }
 
@@ -157,7 +169,7 @@ fun DetailScreen(
                                     .align(Alignment.End)
                             )
                         }
-                        DetailTabs(result = state.result, packageName = packageName)
+                        DetailTabs(result = state.result, packageName = packageName, securityScore = securityScore)
                     }
                 }
             }
@@ -166,7 +178,7 @@ fun DetailScreen(
 }
 
 @Composable
-private fun DetailTabs(result: AnalysisResult, packageName: String) {
+private fun DetailTabs(result: AnalysisResult, packageName: String, securityScore: SecurityScore?) {
     val tabs = listOf("Overview", "Security", "Permissions", "Libraries", "Native", "Unknown")
     var selectedTab by remember { mutableStateOf(0) }
 
@@ -187,7 +199,7 @@ private fun DetailTabs(result: AnalysisResult, packageName: String) {
 
         when (selectedTab) {
             0 -> OverviewTab(result, packageName)
-            1 -> SecurityTab(result.versionInfo, result.securityFlags)
+            1 -> SecurityTab(result.versionInfo, result.securityFlags, securityScore)
             2 -> PermissionsTab(result.permissions)
             3 -> LibrariesTab(result.detectedLibraries)
             4 -> NativeLibrariesTab(result.nativeLibraries)
@@ -348,8 +360,133 @@ private fun OverviewTab(result: AnalysisResult, packageName: String) {
 }
 
 @Composable
-private fun SecurityTab(versionInfo: AppVersionInfo?, securityFlags: SecurityFlags?) {
+fun SecurityScoreCard(score: SecurityScore) {
+    val scoreColor = when {
+        score.score >= 80 -> Color(0xFF639922)
+        score.score >= 50 -> Color(0xFFEF9F27)
+        else -> Color(0xFFE24B4A)
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(3f)
+                ) {
+                    val strokeWidth = 20.dp.toPx()
+                    // центр на нижнем крае — дуга уходит вверх, нижняя граница = center.y
+                    val center = Offset(size.width / 2f, size.height)
+                    val radius = size.height - strokeWidth / 2f
+
+                    drawArc(
+                        color = Color.LightGray.copy(alpha = 0.3f),
+                        startAngle = 180f,
+                        sweepAngle = 180f,
+                        useCenter = false,
+                        topLeft = Offset(center.x - radius, center.y - radius),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+
+                    val filledSweep = 180f * (score.score / 100f)
+                    val gradientBrush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFE24B4A),
+                            Color(0xFFEF9F27),
+                            Color(0xFF639922)
+                        ),
+                        startX = center.x - radius,
+                        endX = center.x + radius
+                    )
+                    drawArc(
+                        brush = gradientBrush,
+                        startAngle = 180f,
+                        sweepAngle = filledSweep,
+                        useCenter = false,
+                        topLeft = Offset(center.x - radius, center.y - radius),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+
+                Text(
+                    text = "${score.score}",
+                    fontSize = 44.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = scoreColor
+                )
+            }
+
+            // Выпадающее меню с причинами снижения балла
+            if (score.reasons.isNotEmpty()) {
+                TextButton(
+                    onClick = { expanded = !expanded }
+                ) {
+                    Text(
+                        text = if (expanded) "Скрыть детали" else "Почему такой балл?",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                AnimatedVisibility(visible = expanded) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        score.reasons.forEach { reason ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            ) {
+                                Text(
+                                    text = "•",
+                                    color = scoreColor,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = reason,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecurityTab(versionInfo: AppVersionInfo?, securityFlags: SecurityFlags?, securityScore: SecurityScore?) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            securityScore?.let { SecurityScoreCard(score = it) }
+        }
         item {
             SectionCard(title = "Version & SDK") {
                 if (versionInfo != null) {
