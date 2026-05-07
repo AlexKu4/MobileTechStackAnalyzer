@@ -112,6 +112,34 @@ object LibraryPatterns {
         LibraryPattern("org.reactivestreams", "Reactive Streams")
     )
 
+    private val databasesPatterns = listOf(
+        LibraryPattern("androidx.room", "Room Database"),
+        LibraryPattern("androidx.sqlite", "Android SQLite"),
+        LibraryPattern("io.realm", "Realm Database"),
+        LibraryPattern("io.objectbox", "ObjectBox"),
+        LibraryPattern("com.google.firebase.firestore", "Firebase Firestore"),
+        LibraryPattern("com.orm", "Sugar ORM"),
+        LibraryPattern("com.activeandroid", "ActiveAndroid"),
+        LibraryPattern("com.yahoo.squidb", "SquiDB"),
+        LibraryPattern("com.snappydb", "SnappyDB"),
+        LibraryPattern("com.mapd.mapd", "MapD (MapDB)"),
+        LibraryPattern("org.litepal", "LitePal"),
+        LibraryPattern("com.raizlabs.android.dbflow", "DBFlow")
+    )
+
+    private val networkingPatterns = listOf(
+        LibraryPattern("okhttp3", "OkHttp"),
+        LibraryPattern("retrofit2", "Retrofit"),
+        LibraryPattern("com.squareup.okhttp", "OkHttp (legacy)"),
+        LibraryPattern("io.ktor", "Ktor"),
+        LibraryPattern("com.android.volley", "Volley"),
+        LibraryPattern("com.google.android.gms.net", "Cronet"),
+        LibraryPattern("com.squareup.okio", "Okio"),
+        LibraryPattern("com.github.kittinunf.fuel", "Fuel"),
+        LibraryPattern("com.loopj.android", "Android Async HTTP"),
+        LibraryPattern("org.apache.httpcomponents", "Apache HTTP Components")
+    )
+
     private val allPatterns: Map<LibraryCategory, List<LibraryPattern>> = mapOf(
         LibraryCategory.ANALYTICS to analyticsPatterns,
         LibraryCategory.ADVERTISING to advertisingPatterns,
@@ -119,6 +147,8 @@ object LibraryPatterns {
         LibraryCategory.PAYMENT to paymentPatterns,
         LibraryCategory.UI to uiPatterns,
         LibraryCategory.REACTIVE to reactivePatterns,
+        LibraryCategory.DATABASES to databasesPatterns,
+        LibraryCategory.NETWORKING to networkingPatterns,
         LibraryCategory.OTHER to emptyList()
     )
 
