@@ -15,5 +15,6 @@ enum class LibraryCategory(val displayName: String) {
     REACTIVE("Reactive Programming"),
     DATABASES("Databases & ORM"),
     NETWORKING("Networking"),
+    DI("Dependency Injection"),
     OTHER("Other")
 }

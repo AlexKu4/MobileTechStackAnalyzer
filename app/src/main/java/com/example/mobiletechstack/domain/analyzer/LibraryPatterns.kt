@@ -140,6 +140,19 @@ object LibraryPatterns {
         LibraryPattern("org.apache.httpcomponents", "Apache HTTP Components")
     )
 
+    private val diPatterns = listOf(
+        LibraryPattern("com.google.dagger", "Dagger"),
+        LibraryPattern("dagger.hilt", "Hilt"),
+        LibraryPattern("io.insert-koin", "Koin"),
+        LibraryPattern("org.koin", "Koin"),
+        LibraryPattern("com.squareup.anvil", "Anvil"),
+        LibraryPattern("toothpick", "Toothpick"),
+        LibraryPattern("me.tatarka.inject", "kotlin-inject"),
+        LibraryPattern("org.kodein.di", "Kodein DI"),
+        LibraryPattern("com.google.inject", "Guice"),
+        LibraryPattern("javax.inject", "JSR-330")
+    )
+
     private val allPatterns: Map<LibraryCategory, List<LibraryPattern>> = mapOf(
         LibraryCategory.ANALYTICS to analyticsPatterns,
         LibraryCategory.ADVERTISING to advertisingPatterns,
@@ -149,6 +162,7 @@ object LibraryPatterns {
         LibraryCategory.REACTIVE to reactivePatterns,
         LibraryCategory.DATABASES to databasesPatterns,
         LibraryCategory.NETWORKING to networkingPatterns,
+        LibraryCategory.DI to diPatterns,
         LibraryCategory.OTHER to emptyList()
     )
 
