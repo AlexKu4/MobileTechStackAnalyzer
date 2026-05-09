@@ -34,7 +34,6 @@ class APKAnalyzer(private val context: Context) {
             val versionInfoDeferred = async { manifestAnalyzer.extractVersionInfo(packageName) }
             val securityFlagsDeferred = async { manifestAnalyzer.extractSecurityFlags(packageName) }
             val permissionsDeferred = async { permissionAnalyzer.extractPermissions(packageName) }
-            val obfuscationDeferred = async { ObfuscationDetector().hasObfuscation(apkPath, dexClassesDeferred.await()) }
 
             val nativeLibs = nativeLibsDeferred.await()
             val dexClasses = dexClassesDeferred.await()
@@ -42,6 +41,7 @@ class APKAnalyzer(private val context: Context) {
             val frameworkInfoDeferred = async { frameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs, dexClasses) }
             val languageInfoDeferred = async { languageDetector.detectLanguagesDetailed(apkPath, nativeLibs, dexClasses) }
             val detectionResultDeferred = async { dexAnalyzer.detectLibrariesAndUnknown(apkPath, dexClasses) }
+            val obfuscationDeferred = async { ObfuscationDetector().hasObfuscation(apkPath, dexClasses) }
 
             val frameworkInfo = frameworkInfoDeferred.await()
             val framework = frameworkInfo.type.displayName
@@ -72,25 +72,9 @@ class APKAnalyzer(private val context: Context) {
             val apkSize = File(apkPath).length()
             val hasObfuscation = obfuscationDeferred.await()
 
-            AnalysisResult(
-                packageName,
-                appName,
-                nativeLibs,
-                apkPath,
-                apkSize,
-                framework,
-                language,
-                primaryAbi,
-                is64Bit,
-                supportedAbis,
-                permissions,
-                versionInfo,
-                securityFlags,
-                detectedLibraries,
-                unknownPackages,
-                frameworkInfo,
-                languageInfo,
-                hasObfuscation
+            AnalysisResult(packageName, appName, nativeLibs, apkPath, apkSize, framework, language, primaryAbi, is64Bit,
+                supportedAbis, permissions, versionInfo, securityFlags, detectedLibraries, unknownPackages,
+                frameworkInfo, languageInfo, hasObfuscation
             )
         }
     }
