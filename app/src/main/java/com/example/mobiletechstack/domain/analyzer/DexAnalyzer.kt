@@ -1,7 +1,9 @@
 package com.example.mobiletechstack.domain.analyzer
 
 import android.content.Context
+import com.example.mobiletechstack.data.repository.PatternRepository
 import com.example.mobiletechstack.domain.model.DetectedLibrary
+import com.example.mobiletechstack.domain.model.LibraryCategory
 import org.jf.dexlib2.DexFileFactory
 import org.jf.dexlib2.Opcodes
 import timber.log.Timber
@@ -9,12 +11,17 @@ import java.io.File
 import java.util.zip.ZipFile
 
 
-class DexAnalyzer(private val context: Context) {
+class DexAnalyzer(private val context: Context, private val patternRepository: PatternRepository) {
+
+    private var cachedPatterns: Map<LibraryCategory, List<LibraryPatterns.LibraryPattern>>? = null
+
+    private suspend fun getOrLoadPatterns(): Map<LibraryCategory, List<LibraryPatterns.LibraryPattern>> =
+        cachedPatterns ?: patternRepository.getPatterns().also { cachedPatterns = it }
 
     suspend fun detectLibraries(apkPath: String, dexClasses: Set<String>): List<DetectedLibrary> {
         return try {
             val detectedLibraries = mutableSetOf<DetectedLibrary>()
-            val allPatterns = LibraryPatterns.getAllPatterns()
+            val allPatterns = getOrLoadPatterns()
             dexClasses.forEach { className ->
                 allPatterns.forEach { (category, patterns) ->
                     patterns.forEach { pattern ->
@@ -66,7 +73,7 @@ class DexAnalyzer(private val context: Context) {
         try {
             val dex = DexFileFactory.loadDexFile(dexFile, Opcodes.getDefault())
 
-            val allPatterns = LibraryPatterns.getAllPatterns()
+            val allPatterns = cachedPatterns ?: LibraryPatterns.getAllPatterns()
 
             dex.classes.forEach { classDef ->
                 val className = classDef.type
@@ -103,7 +110,7 @@ class DexAnalyzer(private val context: Context) {
 
     suspend fun detectLibrariesAndUnknown(apkPath: String, dexClasses: Set<String>): LibraryDetectionResult {
         val detectedLibraries = mutableSetOf<DetectedLibrary>()
-        val allPatterns = LibraryPatterns.getAllPatterns()
+        val allPatterns = getOrLoadPatterns()
         val knownPrefixes = mutableSetOf<String>()
         allPatterns.values.flatten().forEach { pattern ->
             knownPrefixes.add(pattern.packagePattern)

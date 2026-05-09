@@ -1,6 +1,8 @@
 package com.example.mobiletechstack.domain.analyzer
 
 import android.content.Context
+import com.example.mobiletechstack.data.db.AppDatabase
+import com.example.mobiletechstack.data.repository.PatternRepository
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,7 +16,10 @@ class APKAnalyzer(private val context: Context) {
     private val dexClassExtractor = DexClassExtractor(context)
     private val permissionAnalyzer = PermissionAnalyzer(context)
     private val manifestAnalyzer = ManifestAnalyzer(context)
-    private val dexAnalyzer = DexAnalyzer(context)
+    private val dexAnalyzer = DexAnalyzer(
+        context,
+        PatternRepository(context, AppDatabase.getInstance(context).libraryPatternDao())
+    )
     private val languageDetector = LanguageDetector(dexClassExtractor)
     private val frameworkDetector = FrameworkDetector(dexClassExtractor)
 
