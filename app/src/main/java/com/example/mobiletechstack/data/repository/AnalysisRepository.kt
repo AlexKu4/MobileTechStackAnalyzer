@@ -5,7 +5,7 @@ import com.example.mobiletechstack.data.db.AnalysisResultEntity
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.google.gson.Gson
 
-// Запись из истории — результат анализа вместе с датой сохранения
+
 data class HistoryEntry(
     val result: AnalysisResult,
     val analyzedAt: Long
@@ -20,7 +20,14 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
     suspend fun getCached(packageName: String): AnalysisResult? {
         val entity = dao.getByPackageName(packageName) ?: return null
         return try {
-            gson.fromJson(entity.resultJson, AnalysisResult::class.java)
+            val result = gson.fromJson(entity.resultJson, AnalysisResult::class.java)
+            // Защита от частично десериализованного объекта
+            if (result?.packageName == null || result.appName == null) {
+                dao.deleteByPackageName(packageName)
+                null
+            } else {
+                result
+            }
         } catch (e: Exception) {
             // Удаляет битый JSON сразу, чтобы не показывать мусор при следующем открытии
             dao.deleteByPackageName(packageName)

@@ -28,7 +28,7 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
     private val _lastAnalyzedAt = MutableStateFlow<Long?>(null)
     val lastAnalyzedAt: StateFlow<Long?> = _lastAnalyzedAt.asStateFlow()
 
-    // Балл безопасности считается во ViewModel — APKAnalyzer не трогаем
+    // Балл безопасности считается во ViewModel, APKAnalyzer не трогаем
     private val _securityScore = MutableStateFlow<SecurityScore?>(null)
     val securityScore: StateFlow<SecurityScore?> = _securityScore.asStateFlow()
 
@@ -52,9 +52,14 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
 
     fun analyzeApp(packageName: String) {
         viewModelScope.launch {
-            val cached = repository.getCached(packageName)
+            var cached: AnalysisResult? = null
+            try {
+                cached = repository.getCached(packageName)
+            } catch (e: Exception) {
+                // битый кэш, продолаем без него
+            }
+
             if (cached != null) {
-                // Показываем кэш сразу, чтобы экран не был пустым пока идёт свежий анализ
                 _analysisState.value = AnalysisState.Success(cached, fromCache = true)
                 _lastAnalyzedAt.value = repository.getLastAnalyzedAt(packageName)
                 _securityScore.value = SecurityScoreCalculator.calculate(
@@ -76,7 +81,6 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
                     permissions = result.permissions
                 )
             } catch (e: Exception) {
-                // Если кэш уже показан — не перекрываем его ошибкой
                 if (cached == null) {
                     _analysisState.value = AnalysisState.Error(e.message ?: "Неизвестная ошибка")
                 }
