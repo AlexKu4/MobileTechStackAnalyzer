@@ -50,6 +50,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -372,14 +374,23 @@ fun SecurityScoreCard(score: SecurityScore) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .wrapContentHeight()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
+                .wrapContentHeight()
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(
+                text = "Security Score",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.BottomCenter
@@ -433,46 +444,47 @@ fun SecurityScoreCard(score: SecurityScore) {
                 )
             }
 
-            // Выпадающее меню с причинами снижения балла
-            if (score.reasons.isNotEmpty()) {
-                TextButton(
-                    onClick = { expanded = !expanded }
-                ) {
-                    Text(
-                        text = if (expanded) "Скрыть детали" else "Почему такой балл?",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+            TextButton(
+                onClick = { expanded = !expanded }
+            ) {
+                Text(
+                    text = if (expanded) "Hide details" else "Why this score?",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
 
-                AnimatedVisibility(visible = expanded) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        score.reasons.forEach { reason ->
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            ) {
-                                Text(
-                                    text = "•",
-                                    color = scoreColor,
-                                    fontSize = 13.sp
-                                )
-                                Text(
-                                    text = reason,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    score.reasons.forEach { reason ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        ) {
+                            Text(
+                                text = "-",
+                                color = scoreColor,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = reason,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -484,7 +496,7 @@ fun SecurityScoreCard(score: SecurityScore) {
 @Composable
 private fun SecurityTab(versionInfo: AppVersionInfo?, securityFlags: SecurityFlags?, securityScore: SecurityScore?) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
+        item(key = "security_score") {
             securityScore?.let { SecurityScoreCard(score = it) }
         }
         item {
