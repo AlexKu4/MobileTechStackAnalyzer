@@ -14,32 +14,6 @@ class DexAnalyzer(private val context: Context, private val patternRepository: P
     private suspend fun getOrLoadPatterns(): Map<LibraryCategory, List<LibraryPatterns.LibraryPattern>> =
         cachedPatterns ?: patternRepository.getPatterns().also { cachedPatterns = it }
 
-    suspend fun detectLibraries(apkPath: String, dexClasses: Set<String>): List<DetectedLibrary> {
-        return try {
-            val detectedLibraries = mutableSetOf<DetectedLibrary>()
-            val allPatterns = getOrLoadPatterns()
-            dexClasses.forEach { className ->
-                allPatterns.forEach { (category, patterns) ->
-                    patterns.forEach { pattern ->
-                        if (className.startsWith(pattern.packagePattern)) {
-                            detectedLibraries.add(
-                                DetectedLibrary(
-                                    name = pattern.libraryName,
-                                    packageName = pattern.packagePattern,
-                                    category = category
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-            detectedLibraries.toList().sortedBy { it.name }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to detect libraries from APK: $apkPath")
-            emptyList()
-        }
-    }
-
     data class LibraryDetectionResult(
         val detectedLibraries: List<DetectedLibrary>,
         val unknownPackages: List<String>
