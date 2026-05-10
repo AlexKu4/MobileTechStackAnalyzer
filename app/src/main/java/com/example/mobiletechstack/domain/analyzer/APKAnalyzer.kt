@@ -34,11 +34,11 @@ class APKAnalyzer(private val context: Context) {
             val versionInfoDeferred = async { manifestAnalyzer.extractVersionInfo(packageName) }
             val securityFlagsDeferred = async { manifestAnalyzer.extractSecurityFlags(packageName) }
             val permissionsDeferred = async { permissionAnalyzer.extractPermissions(packageName) }
-            val obfuscationDeferred = async { ObfuscationDetector().hasObfuscation(apkPath, dexClassesDeferred.await()) }
 
             val nativeLibs = nativeLibsDeferred.await()
             val dexClasses = dexClassesDeferred.await()
 
+            val obfuscationDeferred = async { ObfuscationDetector().hasObfuscation(apkPath, dexClasses) }
             val frameworkInfoDeferred = async { frameworkDetector.detectFrameworkDetailed(apkPath, nativeLibs, dexClasses) }
             val languageInfoDeferred = async { languageDetector.detectLanguagesDetailed(apkPath, nativeLibs, dexClasses) }
             val detectionResultDeferred = async { dexAnalyzer.detectLibrariesAndUnknown(apkPath, dexClasses) }

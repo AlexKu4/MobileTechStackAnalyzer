@@ -70,5 +70,4 @@ class DexAnalyzer(private val context: Context, private val patternRepository: P
             unknownPackages = unknownPackages.toList().sorted()
         )
     }
-
 }
