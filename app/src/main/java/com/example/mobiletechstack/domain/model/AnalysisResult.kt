@@ -18,5 +18,6 @@ data class AnalysisResult(
     val unknownPackages: List<String> = emptyList(),
     val frameworkInfo: FrameworkInfo? = null,
     val languageInfo: LanguageInfo? = null,
-    val hasObfuscation: Boolean
+    val hasObfuscation: Boolean,
+    val isExternal: Boolean = false
 )

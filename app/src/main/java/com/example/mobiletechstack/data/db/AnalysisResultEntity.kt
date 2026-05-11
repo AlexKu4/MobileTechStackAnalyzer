@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class AnalysisResultEntity(
     @PrimaryKey val packageName: String,
     val analyzedAt: Long,
-    val resultJson: String
+    val resultJson: String,
+    val isExternal: Boolean = false
 )
