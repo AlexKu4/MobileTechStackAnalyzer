@@ -21,6 +21,18 @@ class PermissionAnalyzer(private val context: Context) {
         }
     }
 
+    // Версия для внешнего APK
+    suspend fun extractPermissionsFromFile(apkPath: String): List<PermissionInfo> {
+        return try {
+            val packageInfo = packageManager.getPackageArchiveInfo(apkPath, PackageManager.GET_PERMISSIONS)
+                ?: return emptyList()
+            parsePermissions(packageInfo)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to extract permissions from $apkPath")
+            emptyList()
+        }
+    }
+
     private fun parsePermissions(packageInfo: PackageInfo): List<PermissionInfo> {
         val permissions = mutableListOf<PermissionInfo>()
 

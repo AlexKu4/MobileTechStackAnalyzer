@@ -94,4 +94,75 @@ class APKAnalyzer(private val context: Context) {
             )
         }
     }
+
+    suspend fun analyzeExternalApk(filePath: String, displayName: String): AnalysisResult = coroutineScope {
+        withContext(Dispatchers.IO) {
+            // packageName тянем напрямую из манифеста, обходя PackageManager
+            val packageName = ManifestAnalyzer.extractPackageName(filePath) ?: "unknown.external.apk"
+
+            val nativeLibsDeferred = async { NativeLibraryAnalyzer.extractNativeLibraries(filePath) }
+            val dexClassesDeferred = async { dexClassExtractor.extractAllClassNames(filePath) }
+            val versionInfoDeferred = async { manifestAnalyzer.extractVersionInfoFromFile(filePath) }
+            val securityFlagsDeferred = async { manifestAnalyzer.extractSecurityFlagsFromFile(filePath) }
+            val permissionsDeferred = async { permissionAnalyzer.extractPermissionsFromFile(filePath) }
+
+            val nativeLibs = nativeLibsDeferred.await()
+            val dexClasses = dexClassesDeferred.await()
+
+            val obfuscationDeferred = async { ObfuscationDetector().hasObfuscation(filePath, dexClasses) }
+            val frameworkInfoDeferred = async { frameworkDetector.detectFrameworkDetailed(filePath, nativeLibs, dexClasses) }
+            val languageInfoDeferred = async { languageDetector.detectLanguagesDetailed(filePath, nativeLibs, dexClasses) }
+            val detectionResultDeferred = async { dexAnalyzer.detectLibrariesAndUnknown(filePath, dexClasses) }
+
+            val frameworkInfo = frameworkInfoDeferred.await()
+            val framework = frameworkInfo.type.displayName
+
+            val languageInfo = languageInfoDeferred.await()
+            val language = when {
+                languageInfo.languages.size > 1 -> {
+                    val others = languageInfo.languages
+                        .filter { it != languageInfo.primary }
+                        .joinToString(", ") { it.displayName }
+                    "${languageInfo.primary.displayName} & $others"
+                }
+                languageInfo.languages.size == 1 -> languageInfo.languages.first().displayName
+                else -> "Unknown"
+            }
+
+            val detectionResult = detectionResultDeferred.await()
+            val detectedLibraries = detectionResult.detectedLibraries
+            val unknownPackages = detectionResult.unknownPackages
+            val versionInfo = versionInfoDeferred.await()
+            val securityFlags = securityFlagsDeferred.await()
+            val permissions = permissionsDeferred.await()
+
+            val primaryAbi = NativeLibraryAnalyzer.getPrimaryAbi(nativeLibs)
+            val is64Bit = primaryAbi.contains("64")
+            val supportedAbis = NativeLibraryAnalyzer.getAbis(nativeLibs)
+            val apkSize = File(filePath).length()
+            val hasObfuscation = obfuscationDeferred.await()
+
+            AnalysisResult(
+                packageName = packageName,
+                appName = displayName,
+                nativeLibraries = nativeLibs,
+                apkPath = filePath,
+                apkSize = apkSize,
+                framework = framework,
+                language = language,
+                primaryAbi = primaryAbi,
+                is64Bit = is64Bit,
+                supportedAbis = supportedAbis,
+                permissions = permissions,
+                versionInfo = versionInfo,
+                securityFlags = securityFlags,
+                detectedLibraries = detectedLibraries,
+                unknownPackages = unknownPackages,
+                frameworkInfo = frameworkInfo,
+                languageInfo = languageInfo,
+                hasObfuscation = hasObfuscation,
+                isExternal = true
+            )
+        }
+    }
 }
