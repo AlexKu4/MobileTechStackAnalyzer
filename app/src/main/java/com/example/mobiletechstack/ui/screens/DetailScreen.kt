@@ -67,6 +67,7 @@ fun DetailScreen(
     packageName: String,
     onBackClick: () -> Unit,
     cacheOnly: Boolean = false,
+    fromExternal: Boolean = false,
     viewModel: DetailViewModel = viewModel()
 ) {
     val analysisState by viewModel.analysisState.collectAsState()
@@ -157,7 +158,7 @@ fun DetailScreen(
                 }
                 is AnalysisState.Success -> {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (state.fromCache && lastAnalyzedAt != null) {
+                        if (state.fromCache && lastAnalyzedAt != null && !fromExternal) {
                             val dateStr = remember(lastAnalyzedAt) {
                                 SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
                                     .format(lastAnalyzedAt!!)

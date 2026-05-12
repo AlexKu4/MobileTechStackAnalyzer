@@ -4,16 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.mobiletechstack.ui.screens.AnalyzeExternalScreen
 import com.example.mobiletechstack.ui.screens.AppListScreen
 import com.example.mobiletechstack.ui.screens.CompareScreen
 import com.example.mobiletechstack.ui.screens.DetailScreen
@@ -42,7 +38,12 @@ fun AppNavigation() {
     val listState = rememberLazyListState()
 
     BackHandler(enabled = currentScreen !is Screen.AppList) {
-        currentScreen = Screen.AppList
+        val current = currentScreen
+        currentScreen = if (current is Screen.Detail && current.fromExternal) {
+            Screen.AnalyzeExternal
+        } else {
+            Screen.AppList
+        }
     }
 
     when (val screen = currentScreen) {
@@ -58,8 +59,8 @@ fun AppNavigation() {
                 onHistoryClick = {
                     currentScreen = Screen.History
                 },
-                onAnalyzeUrlClick = {
-                    currentScreen = Screen.AnalyzeUrl
+                onAnalyzeExternalClick = {
+                    currentScreen = Screen.AnalyzeExternal
                 }
             )
         }
@@ -79,33 +80,25 @@ fun AppNavigation() {
             DetailScreen(
                 packageName = screen.packageName,
                 cacheOnly = screen.cacheOnly,
+                fromExternal = screen.fromExternal,
                 onBackClick = {
-                    currentScreen = Screen.AppList
+                    currentScreen = if (screen.fromExternal) Screen.AnalyzeExternal else Screen.AppList
                 }
             )
         }
 
-        is Screen.AnalyzeUrl -> {
-            Scaffold(
-                topBar = {
-                    @OptIn(ExperimentalMaterial3Api::class)
-                    TopAppBar(
-                        title = { Text("Анализ APK по ссылке") },
-                        navigationIcon = {
-                            IconButton(onClick = { currentScreen = Screen.AppList }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                            }
-                        }
+        is Screen.AnalyzeExternal -> {
+            AnalyzeExternalScreen(
+                onBackClick = { currentScreen = Screen.AppList },
+                onAnalysisComplete = { result ->
+                    currentScreen = Screen.Detail(
+                        packageName = result.packageName,
+                        appName = result.appName,
+                        cacheOnly = true,
+                        fromExternal = true
                     )
                 }
-            ) { paddingValues ->
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Скоро", style = MaterialTheme.typography.titleLarge)
-                }
-            }
+            )
         }
 
         is Screen.History -> {
@@ -134,7 +127,12 @@ fun AppNavigation() {
 
 sealed class Screen {
     data object AppList : Screen()
-    data class Detail(val packageName: String, val appName: String, val cacheOnly: Boolean = false) : Screen()
+    data class Detail(
+        val packageName: String,
+        val appName: String,
+        val cacheOnly: Boolean = false,
+        val fromExternal: Boolean = false
+    ) : Screen()
     data object SelectFirst : Screen()
     data class Compare(
         val firstPackage: String,
@@ -142,6 +140,6 @@ sealed class Screen {
         val secondPackage: String,
         val secondName: String
     ) : Screen()
-    data object AnalyzeUrl : Screen()
+    data object AnalyzeExternal : Screen()
     data object History : Screen()
 }

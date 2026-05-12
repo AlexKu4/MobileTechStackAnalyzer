@@ -32,7 +32,7 @@ fun AppListScreen(
     onBothSelected: ((String, String, String, String) -> Unit)? = null,
     onCompareClick: (() -> Unit)? = null,
     onHistoryClick: (() -> Unit)? = null,
-    onAnalyzeUrlClick: (() -> Unit)? = null,
+    onAnalyzeExternalClick: (() -> Unit)? = null,
     viewModel: AppsListViewModel = viewModel()
 ) {
     val allApps by viewModel.allApps.collectAsState()
@@ -97,11 +97,11 @@ fun AppListScreen(
 
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Link, contentDescription = null) },
-                    label = { Text("Анализ APK по ссылке") },
+                    label = { Text("Analyze external APK") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
-                        onAnalyzeUrlClick?.invoke()
+                        onAnalyzeExternalClick?.invoke()
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )

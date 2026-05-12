@@ -87,9 +87,7 @@ fun HistoryScreen(
                                     context.packageManager.getApplicationIcon(entry.result.packageName)
                                 } catch (e: Exception) { null }
                             }
-                            val isInstalled = remember(entry.result.packageName) {
-                                viewModel.isAppInstalled(entry.result.packageName)
-                            }
+                            val isExternal = entry.result.isExternal
 
                             Card(
                                 modifier = Modifier
@@ -139,11 +137,9 @@ fun HistoryScreen(
                                             fontSize = 13.sp,
                                             color = MaterialTheme.colorScheme.outline
                                         )
-                                        if (!isInstalled) {
+                                        if (isExternal) {
                                             Spacer(modifier = Modifier.height(4.dp))
-                                            FilterChip(
-                                                selected = false,
-                                                enabled = false,
+                                            AssistChip(
                                                 onClick = {},
                                                 label = { Text("External APK", fontSize = 11.sp) }
                                             )
