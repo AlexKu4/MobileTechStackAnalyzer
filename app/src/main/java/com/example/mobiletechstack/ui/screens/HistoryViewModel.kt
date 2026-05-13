@@ -1,4 +1,4 @@
-package com.example.mobiletechstack.ui.screens
+﻿package com.example.mobiletechstack.ui.screens
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -30,10 +30,4 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             initialValue = emptyList()
         )
 
-    fun isAppInstalled(packageName: String): Boolean {
-        return try {
-            getApplication<Application>().packageManager.getPackageInfo(packageName, 0)
-            true
-        } catch (e: Exception) { false }
-    }
 }

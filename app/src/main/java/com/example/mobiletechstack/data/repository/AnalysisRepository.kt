@@ -23,7 +23,7 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
         val entity = dao.getByPackageName(packageName) ?: return null
         return try {
             val result = gson.fromJson(entity.resultJson, AnalysisResult::class.java)
-            if (result?.packageName == null || result.appName == null) {
+            if (result?.packageName == null) {
                 dao.deleteByPackageName(packageName)
                 null
             } else {
