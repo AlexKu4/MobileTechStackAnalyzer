@@ -4,6 +4,8 @@ import com.example.mobiletechstack.data.db.AnalysisResultDao
 import com.example.mobiletechstack.data.db.AnalysisResultEntity
 import com.example.mobiletechstack.domain.model.AnalysisResult
 import com.google.gson.Gson
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 
 data class HistoryEntry(
@@ -21,7 +23,6 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
         val entity = dao.getByPackageName(packageName) ?: return null
         return try {
             val result = gson.fromJson(entity.resultJson, AnalysisResult::class.java)
-            // Защита от частично десериализованного объекта
             if (result?.packageName == null || result.appName == null) {
                 dao.deleteByPackageName(packageName)
                 null
@@ -29,7 +30,7 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
                 result
             }
         } catch (e: Exception) {
-            // Удаляет битый JSON сразу, чтобы не показывать мусор при следующем открытии
+            // Удаляет битый JSON сразу
             dao.deleteByPackageName(packageName)
             null
         }
@@ -48,7 +49,6 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
     suspend fun getLastAnalyzedAt(packageName: String): Long? =
         dao.getByPackageName(packageName)?.analyzedAt
 
-    // Возвращает все сохранённые результаты, отсортированные от новых к старым
     suspend fun getHistory(): List<HistoryEntry> {
         return dao.getAllSortedByDate().mapNotNull { entity ->
             try {
@@ -61,6 +61,21 @@ class AnalysisRepository(private val dao: AnalysisResultDao) {
             }
         }
     }
+
+    // автоматически обновляется при любом изменении таблицы
+    fun observeHistory(): Flow<List<HistoryEntry>> =
+        dao.observeAllSortedByDate().map { entities ->
+            entities.mapNotNull { entity ->
+                try {
+                    HistoryEntry(
+                        result = gson.fromJson(entity.resultJson, AnalysisResult::class.java),
+                        analyzedAt = entity.analyzedAt
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }
 
     companion object {
         const val CACHE_LIMIT = 50
