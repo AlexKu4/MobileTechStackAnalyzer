@@ -98,7 +98,8 @@ class APKAnalyzer(private val context: Context) {
     suspend fun analyzeExternalApk(filePath: String, displayName: String): AnalysisResult = coroutineScope {
         withContext(Dispatchers.IO) {
             // packageName тянем напрямую из манифеста, обходя PackageManager
-            val packageName = ManifestAnalyzer.extractPackageName(filePath) ?: "unknown.external.apk"
+            val packageName = ManifestAnalyzer.extractPackageName(filePath)
+                ?: "external.${displayName.lowercase().replace(Regex("[^a-z0-9]"), "_")}"
 
             val nativeLibsDeferred = async { NativeLibraryAnalyzer.extractNativeLibraries(filePath) }
             val dexClassesDeferred = async { dexClassExtractor.extractAllClassNames(filePath) }
