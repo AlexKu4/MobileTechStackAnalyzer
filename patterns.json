@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updated": "2026-05-08",
+  "version": 2,
+  "updated": "2026-05-14",
   "patterns": {
     "ANALYTICS": [
       { "package": "com.google.firebase.analytics", "name": "Firebase Analytics" },
@@ -135,6 +135,69 @@
       { "package": "org.kodein.di", "name": "Kodein DI" },
       { "package": "com.google.inject", "name": "Guice" },
       { "package": "javax.inject", "name": "JSR-330" }
+    ],
+    "IMAGE_LOADING": [
+      { "package": "com.bumptech.glide", "name": "Glide" },
+      { "package": "com.squareup.picasso", "name": "Picasso" },
+      { "package": "io.coil-kt", "name": "Coil" },
+      { "package": "coil", "name": "Coil" },
+      { "package": "com.facebook.fresco", "name": "Fresco" },
+      { "package": "com.nostra13.universalimageloader", "name": "Universal Image Loader" },
+      { "package": "com.github.bumptech.glide", "name": "Glide" }
+    ],
+    "SERIALIZATION": [
+      { "package": "com.google.gson", "name": "Gson" },
+      { "package": "com.squareup.moshi", "name": "Moshi" },
+      { "package": "com.fasterxml.jackson", "name": "Jackson" },
+      { "package": "kotlinx.serialization", "name": "Kotlin Serialization" },
+      { "package": "com.jakewharton.moshi", "name": "Moshi Adapters" },
+      { "package": "org.simpleframework.xml", "name": "Simple XML" }
+    ],
+    "MAPS": [
+      { "package": "com.google.android.gms.maps", "name": "Google Maps SDK" },
+      { "package": "com.google.maps.android", "name": "Google Maps Utils" },
+      { "package": "com.yandex.mapkit", "name": "Yandex MapKit" },
+      { "package": "com.mapbox", "name": "Mapbox" },
+      { "package": "org.osmdroid", "name": "OSMDroid" },
+      { "package": "com.here.sdk", "name": "HERE Maps SDK" },
+      { "package": "com.tomtom", "name": "TomTom SDK" }
+    ],
+    "MEDIA": [
+      { "package": "com.google.android.exoplayer2", "name": "ExoPlayer" },
+      { "package": "androidx.media3", "name": "Media3 (ExoPlayer)" },
+      { "package": "com.google.android.gms.cast", "name": "Google Cast" },
+      { "package": "com.pierfrancescosoffritti.androidyoutubeplayer", "name": "YouTube Player" },
+      { "package": "com.danikula.videocache", "name": "AndroidVideoCache" },
+      { "package": "org.videolan.libvlc", "name": "VLC" },
+      { "package": "tv.danmaku.bili", "name": "IjkPlayer" }
+    ],
+    "PUSH": [
+      { "package": "com.google.firebase.messaging", "name": "Firebase Cloud Messaging" },
+      { "package": "com.onesignal", "name": "OneSignal" },
+      { "package": "com.pusher", "name": "Pusher" },
+      { "package": "com.urbanairship", "name": "Airship (Urban Airship)" },
+      { "package": "com.batch.android", "name": "Batch" },
+      { "package": "com.braze", "name": "Braze (Appboy)" },
+      { "package": "com.pushwoosh", "name": "Pushwoosh" },
+      { "package": "ru.rustore.sdk.pushclient", "name": "RuStore Push" }
+    ],
+    "CAMERA": [
+      { "package": "androidx.camera", "name": "CameraX" },
+      { "package": "com.google.mlkit", "name": "ML Kit" },
+      { "package": "com.google.zxing", "name": "ZXing (QR Scanner)" },
+      { "package": "me.dm7.barcodescanner", "name": "Barcode Scanner" },
+      { "package": "com.journeyapps.barcodescanner", "name": "ZXing Android Embedded" },
+      { "package": "com.github.yalantis.ucrop", "name": "uCrop" },
+      { "package": "com.github.dhaval2404.imagepicker", "name": "ImagePicker" }
+    ],
+    "SECURITY": [
+      { "package": "androidx.security.crypto", "name": "Android Security Crypto" },
+      { "package": "net.sqlcipher", "name": "SQLCipher" },
+      { "package": "com.scottyab.rootbeer", "name": "RootBeer (Root Detection)" },
+      { "package": "com.datatheorem.android", "name": "TrustKit (SSL Pinning)" },
+      { "package": "org.bouncycastle", "name": "Bouncy Castle" },
+      { "package": "com.google.android.gms.safetynet", "name": "SafetyNet" },
+      { "package": "com.google.android.play.core.integrity", "name": "Play Integrity API" }
     ],
     "OTHER": []
   }

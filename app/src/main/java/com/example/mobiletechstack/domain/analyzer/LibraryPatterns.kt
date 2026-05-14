@@ -153,6 +153,65 @@ object LibraryPatterns {
         LibraryPattern("javax.inject", "JSR-330")
     )
 
+    private val imageLoadingPatterns = listOf(
+        LibraryPattern("com.bumptech.glide", "Glide"),
+        LibraryPattern("com.github.bumptech.glide", "Glide"),
+        LibraryPattern("com.squareup.picasso", "Picasso"),
+        LibraryPattern("io.coil-kt", "Coil"),
+        LibraryPattern("coil", "Coil"),
+        LibraryPattern("com.facebook.fresco", "Fresco"),
+        LibraryPattern("com.nostra13.universalimageloader", "Universal Image Loader")
+    )
+
+    private val serializationPatterns = listOf(
+        LibraryPattern("com.google.gson", "Gson"),
+        LibraryPattern("com.squareup.moshi", "Moshi"),
+        LibraryPattern("com.jakewharton.moshi", "Moshi"),
+        LibraryPattern("com.fasterxml.jackson", "Jackson"),
+        LibraryPattern("kotlinx.serialization", "Kotlin Serialization")
+    )
+
+    private val mapsPatterns = listOf(
+        LibraryPattern("com.google.android.gms.maps", "Google Maps SDK"),
+        LibraryPattern("com.google.maps.android", "Google Maps SDK"),
+        LibraryPattern("com.yandex.mapkit", "Yandex MapKit"),
+        LibraryPattern("com.mapbox", "Mapbox"),
+        LibraryPattern("org.osmdroid", "OSMDroid")
+    )
+
+    private val mediaPatterns = listOf(
+        LibraryPattern("com.google.android.exoplayer2", "ExoPlayer"),
+        LibraryPattern("androidx.media3", "Media3"),
+        LibraryPattern("com.google.android.gms.cast", "Google Cast"),
+        LibraryPattern("com.pierfrancescosoffritti.androidyoutubeplayer", "YouTube Player"),
+        LibraryPattern("org.videolan.libvlc", "VLC")
+    )
+
+    private val pushPatterns = listOf(
+        LibraryPattern("com.google.firebase.messaging", "Firebase Cloud Messaging"),
+        LibraryPattern("com.onesignal", "OneSignal"),
+        LibraryPattern("com.pusher", "Pusher"),
+        LibraryPattern("com.urbanairship", "Airship"),
+        LibraryPattern("ru.rustore.sdk.pushclient", "RuStore Push")
+    )
+
+    private val cameraPatterns = listOf(
+        LibraryPattern("androidx.camera", "CameraX"),
+        LibraryPattern("com.google.mlkit", "ML Kit"),
+        LibraryPattern("com.google.zxing", "ZXing"),
+        LibraryPattern("com.journeyapps.barcodescanner", "ZXing"),
+        LibraryPattern("com.github.yalantis.ucrop", "uCrop")
+    )
+
+    private val securityPatterns = listOf(
+        LibraryPattern("androidx.security.crypto", "Android Security Crypto"),
+        LibraryPattern("net.sqlcipher", "SQLCipher"),
+        LibraryPattern("com.scottyab.rootbeer", "RootBeer"),
+        LibraryPattern("org.bouncycastle", "Bouncy Castle"),
+        LibraryPattern("com.google.android.gms.safetynet", "SafetyNet"),
+        LibraryPattern("com.google.android.play.core.integrity", "Play Integrity")
+    )
+
     private val allPatterns: Map<LibraryCategory, List<LibraryPattern>> = mapOf(
         LibraryCategory.ANALYTICS to analyticsPatterns,
         LibraryCategory.ADVERTISING to advertisingPatterns,
@@ -163,6 +222,13 @@ object LibraryPatterns {
         LibraryCategory.DATABASES to databasesPatterns,
         LibraryCategory.NETWORKING to networkingPatterns,
         LibraryCategory.DI to diPatterns,
+        LibraryCategory.IMAGE_LOADING to imageLoadingPatterns,
+        LibraryCategory.SERIALIZATION to serializationPatterns,
+        LibraryCategory.MAPS to mapsPatterns,
+        LibraryCategory.MEDIA to mediaPatterns,
+        LibraryCategory.PUSH to pushPatterns,
+        LibraryCategory.CAMERA to cameraPatterns,
+        LibraryCategory.SECURITY to securityPatterns,
         LibraryCategory.OTHER to emptyList()
     )
 

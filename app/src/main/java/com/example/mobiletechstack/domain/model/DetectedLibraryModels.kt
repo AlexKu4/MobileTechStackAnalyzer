@@ -16,5 +16,12 @@ enum class LibraryCategory(val displayName: String) {
     DATABASES("Databases & ORM"),
     NETWORKING("Networking"),
     DI("Dependency Injection"),
+    IMAGE_LOADING("Image Loading"),
+    SERIALIZATION("Serialization"),
+    MAPS("Maps & Location"),
+    MEDIA("Media & Player"),
+    PUSH("Push Notifications"),
+    CAMERA("Camera"),
+    SECURITY("Security"),
     OTHER("Other")
 }
