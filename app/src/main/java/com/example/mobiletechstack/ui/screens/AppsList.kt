@@ -14,7 +14,7 @@ import com.example.mobiletechstack.utils.formatSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Compare
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Menu
@@ -74,7 +74,7 @@ fun AppListScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Compare, contentDescription = null) },
+                    icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null) },
                     label = { Text("Compare Apps") },
                     selected = false,
                     onClick = {
