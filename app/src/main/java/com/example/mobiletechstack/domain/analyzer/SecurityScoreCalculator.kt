@@ -9,17 +9,21 @@ import com.example.mobiletechstack.domain.model.SecurityScore
 // Считает балл безопасности — начинаем со 100 и вычитаем за каждый тревожный признак
 object SecurityScoreCalculator {
 
-    private val DANGEROUS_CATEGORIES = setOf(
+    private val CRITICAL_CATEGORIES = setOf(
         PermissionCategory.CAMERA,
-        PermissionCategory.LOCATION,
-        PermissionCategory.STORAGE,
         PermissionCategory.MICROPHONE,
-        PermissionCategory.CONTACTS,
+        PermissionCategory.LOCATION,
+        PermissionCategory.CONTACTS
+    )
+    private val MODERATE_CATEGORIES = setOf(
         PermissionCategory.PHONE,
         PermissionCategory.SMS,
-        PermissionCategory.CALENDAR,
+        PermissionCategory.STORAGE
+    )
+    private val LOW_CATEGORIES = setOf(
+        PermissionCategory.BLUETOOTH,
         PermissionCategory.SENSORS,
-        PermissionCategory.BLUETOOTH
+        PermissionCategory.CALENDAR
     )
 
     fun calculate(
@@ -27,46 +31,57 @@ object SecurityScoreCalculator {
         hasObfuscation: Boolean,
         permissions: List<PermissionInfo>
     ): SecurityScore {
-        var score = 100
+        var score = 100f
         val reasons = mutableListOf<String>()
 
         // Позволяет подключиться к приложению через ADB и читать память
         if (securityFlags?.isDebuggable == true) {
-            score -= 30
+            score -= 30f
             reasons.add("Debug mode enabled (debuggable) - critical risk -30 pts")
         }
 
         // Данные передаются без шифрования — перехват в любой WiFi сети
         if (securityFlags?.usesCleartextTraffic == true) {
-            score -= 25
+            score -= 25f
             reasons.add("Unencrypted traffic allowed (cleartext) -25 pts")
         }
 
         // Без обфускации код читается как открытая книга
         if (!hasObfuscation) {
-            score -= 15
+            score -= 15f
             reasons.add("Code is not obfuscated -15 pts")
         }
 
         // Резервная копия через ADB без root — риск при физическом доступе
         if (securityFlags?.allowBackup == true) {
-            score -= 10
-            reasons.add("Backup via ADB allowed (allowBackup) -10 pts")
+            score -= 5f
+            reasons.add("Backup via ADB allowed (allowBackup) -5 pts")
         }
 
-        // За каждое опасное разрешение -2 балла, максимум -20 суммарно
-        val dangerousPermissions = permissions.filter { it.category in DANGEROUS_CATEGORIES }
-        val permissionPenalty = minOf(dangerousPermissions.size * 2, 20)
-        if (permissionPenalty > 0) {
-            score -= permissionPenalty
-            reasons.add("Dangerous permissions: ${dangerousPermissions.size} -$permissionPenalty pts")
+        // Три уровня опасности разрешений суммируются в одну строку reasons
+        val criticalCount = permissions.count { it.category in CRITICAL_CATEGORIES }
+        val moderateCount = permissions.count { it.category in MODERATE_CATEGORIES }
+        val lowCount = permissions.count { it.category in LOW_CATEGORIES }
+        val totalCount = criticalCount + moderateCount + lowCount
+
+        val totalPenalty = minOf(criticalCount * 2f + moderateCount * 1f + lowCount * 0.5f, 10f)
+
+        if (totalPenalty > 0f) {
+            val display = if (totalPenalty % 1f == 0f) totalPenalty.toInt().toString() else totalPenalty.toString()
+            reasons.add("Dangerous permissions: $totalCount (-$display pts)")
         }
 
-        val finalScore = maxOf(0, score)
+        val finalScore = maxOf(0f, score - totalPenalty)
         val riskLevel = when {
-            finalScore >= 80 -> RiskLevel.LOW
-            finalScore >= 50 -> RiskLevel.MEDIUM
+            finalScore >= 80f -> RiskLevel.LOW
+            finalScore >= 60f -> RiskLevel.MEDIUM
             else -> RiskLevel.HIGH
+        }
+        val verdict = when {
+            finalScore >= 80f -> "Good security practices"
+            finalScore >= 60f -> "Acceptable, minor concerns"
+            finalScore >= 40f -> "Several risks detected"
+            else -> "High risk"
         }
 
         if (reasons.isEmpty()) {
@@ -80,7 +95,8 @@ object SecurityScoreCalculator {
         return SecurityScore(
             score = finalScore,
             riskLevel = riskLevel,
-            reasons = reasons
+            reasons = reasons,
+            verdict = verdict
         )
     }
 }

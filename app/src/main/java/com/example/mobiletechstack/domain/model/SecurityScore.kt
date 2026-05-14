@@ -4,7 +4,8 @@ package com.example.mobiletechstack.domain.model
 enum class RiskLevel { LOW, MEDIUM, HIGH }
 
 data class SecurityScore(
-    val score: Int,
+    val score: Float,
     val riskLevel: RiskLevel,
-    val reasons: List<String>
+    val reasons: List<String>,
+    val verdict: String
 )

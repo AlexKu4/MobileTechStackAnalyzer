@@ -32,7 +32,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = emptyList()
         )
-        assertEquals(100, result.score)
+        assertEquals(100f, result.score, 0f)
     }
 
     @Test
@@ -42,7 +42,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = emptyList()
         )
-        assertEquals(70, result.score)
+        assertEquals(70f, result.score, 0f)
     }
 
     @Test
@@ -52,7 +52,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = emptyList()
         )
-        assertEquals(75, result.score)
+        assertEquals(75f, result.score, 0f)
     }
 
     @Test
@@ -62,31 +62,52 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = false,
             permissions = emptyList()
         )
-        assertEquals(85, result.score)
+        assertEquals(85f, result.score, 0f)
     }
 
     @Test
-    fun allowBackup_deducts10() {
+    fun allowBackup_deducts5() {
         val result = SecurityScoreCalculator.calculate(
             securityFlags = flags(allowBackup = true),
             hasObfuscation = true,
             permissions = emptyList()
         )
-        assertEquals(90, result.score)
+        assertEquals(95f, result.score, 0f)
     }
 
     @Test
-    fun oneDangerousPermission_deducts2() {
+    fun oneCriticalPermission_deducts2() {
         val result = SecurityScoreCalculator.calculate(
             securityFlags = flags(),
             hasObfuscation = true,
             permissions = listOf(perm(PermissionCategory.CAMERA))
         )
-        assertEquals(98, result.score)
+        assertEquals(98f, result.score, 0f)
     }
 
     @Test
-    fun tenDangerousPermissions_deducts20() {
+    fun oneModeratePermission_deducts1() {
+        val result = SecurityScoreCalculator.calculate(
+            securityFlags = flags(),
+            hasObfuscation = true,
+            permissions = listOf(perm(PermissionCategory.PHONE))
+        )
+        assertEquals(99f, result.score, 0f)
+    }
+
+    @Test
+    fun oneLowPermission_deducts0point5() {
+        val result = SecurityScoreCalculator.calculate(
+            securityFlags = flags(),
+            hasObfuscation = true,
+            permissions = listOf(perm(PermissionCategory.BLUETOOTH))
+        )
+        assertEquals(99.5f, result.score, 0.001f)
+    }
+
+    @Test
+    fun tenDangerousPermissions_deducts12point5() {
+        // 4 critical×2 + 3 moderate×1 + 3 low×0.5 = 8+3+1.5 = 12.5
         val perms = listOf(
             perm(PermissionCategory.CAMERA),
             perm(PermissionCategory.LOCATION),
@@ -104,24 +125,24 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = perms
         )
-        assertEquals(80, result.score)
+        assertEquals(87.5f, result.score, 0.001f)
     }
 
     @Test
-    fun moreThan10DangerousPermissions_penaltyCappedAt20() {
-        // 15 опасных разрешений — штраф не может превысить 20
+    fun penaltyCappedAt15() {
+        // 15 критических разрешений × 2 = 30, но лимит 15
         val perms = List(15) { perm(PermissionCategory.CAMERA) }
         val result = SecurityScoreCalculator.calculate(
             securityFlags = flags(),
             hasObfuscation = true,
             permissions = perms
         )
-        assertEquals(80, result.score)
+        assertEquals(85f, result.score, 0f)
     }
 
     @Test
-    fun allWorstCaseFlags_scoreIs0() {
-        // 100 - 30 - 25 - 15 - 10 - 20 = 0
+    fun allWorstCaseFlags_scoreIs12point5() {
+        // 100 - 30 - 25 - 15 - 5 - 12.5 = 12.5
         val perms = listOf(
             perm(PermissionCategory.CAMERA),
             perm(PermissionCategory.LOCATION),
@@ -139,7 +160,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = false,
             permissions = perms
         )
-        assertEquals(0, result.score)
+        assertEquals(12.5f, result.score, 0.001f)
     }
 
     @Test
@@ -150,7 +171,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = false,
             permissions = perms
         )
-        assertTrue(result.score >= 0)
+        assertTrue(result.score >= 0f)
     }
 
     // ── null flags ───────────────────────────────────────────────────────────
@@ -162,7 +183,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = emptyList()
         )
-        assertEquals(100, result.score)
+        assertEquals(100f, result.score, 0f)
     }
 
     @Test
@@ -172,7 +193,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = false,
             permissions = emptyList()
         )
-        assertEquals(85, result.score)
+        assertEquals(85f, result.score, 0f)
     }
 
     // ── безопасные разрешения не считаются ──────────────────────────────────
@@ -189,7 +210,7 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = perms
         )
-        assertEquals(100, result.score)
+        assertEquals(100f, result.score, 0f)
     }
 
     // ── уровни риска ─────────────────────────────────────────────────────────
@@ -201,8 +222,8 @@ class SecurityScoreCalculatorTest {
     }
 
     @Test
-    fun riskLevel_low_atBoundary80() {
-        // ровно 10 опасных разрешений → 100 - 20 = 80
+    fun riskLevel_low_atBoundary87point5() {
+        // 4 critical + 3 moderate + 3 low → 12.5 penalty → score = 87.5 → LOW
         val perms = listOf(
             perm(PermissionCategory.CAMERA), perm(PermissionCategory.LOCATION),
             perm(PermissionCategory.STORAGE), perm(PermissionCategory.MICROPHONE),
@@ -211,7 +232,7 @@ class SecurityScoreCalculatorTest {
             perm(PermissionCategory.SENSORS), perm(PermissionCategory.BLUETOOTH)
         )
         val result = SecurityScoreCalculator.calculate(flags(), true, perms)
-        assertEquals(80, result.score)
+        assertEquals(87.5f, result.score, 0.001f)
         assertEquals(RiskLevel.LOW, result.riskLevel)
     }
 
@@ -219,7 +240,7 @@ class SecurityScoreCalculatorTest {
     fun riskLevel_medium_whenScore70() {
         // debuggable → 70
         val result = SecurityScoreCalculator.calculate(flags(isDebuggable = true), true, emptyList())
-        assertEquals(70, result.score)
+        assertEquals(70f, result.score, 0f)
         assertEquals(RiskLevel.MEDIUM, result.riskLevel)
     }
 
@@ -231,12 +252,12 @@ class SecurityScoreCalculatorTest {
             hasObfuscation = true,
             permissions = emptyList()
         )
-        assertEquals(45, result.score)
+        assertEquals(45f, result.score, 0f)
         assertEquals(RiskLevel.HIGH, result.riskLevel)
     }
 
     @Test
-    fun riskLevel_high_whenScore0() {
+    fun riskLevel_high_withAllPenalties() {
         val result = SecurityScoreCalculator.calculate(
             securityFlags = flags(isDebuggable = true, allowBackup = true, usesCleartextTraffic = true),
             hasObfuscation = false,
@@ -248,9 +269,9 @@ class SecurityScoreCalculatorTest {
     // ── reasons ──────────────────────────────────────────────────────────────
 
     @Test
-    fun noIssues_reasonsIsEmpty() {
+    fun noIssues_reasonsContainOkMessages() {
         val result = SecurityScoreCalculator.calculate(flags(), true, emptyList())
-        assertTrue(result.reasons.isEmpty())
+        assertTrue(result.reasons.all { "OK" in it })
     }
 
     @Test
@@ -273,7 +294,7 @@ class SecurityScoreCalculatorTest {
     @Test
     fun noObfuscation_reasonMentionsObfuscation() {
         val result = SecurityScoreCalculator.calculate(flags(), false, emptyList())
-        assertTrue(result.reasons.any { "обфусц" in it })
+        assertTrue(result.reasons.any { "obfuscat" in it.lowercase() })
     }
 
     @Test

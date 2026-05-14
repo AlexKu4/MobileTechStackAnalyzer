@@ -365,8 +365,8 @@ private fun OverviewTab(result: AnalysisResult, packageName: String) {
 @Composable
 fun SecurityScoreCard(score: SecurityScore) {
     val scoreColor = when {
-        score.score >= 80 -> Color(0xFF639922)
-        score.score >= 50 -> Color(0xFFEF9F27)
+        score.score >= 80f -> Color(0xFF639922)
+        score.score >= 50f -> Color(0xFFEF9F27)
         else -> Color(0xFFE24B4A)
     }
 
@@ -416,7 +416,7 @@ fun SecurityScoreCard(score: SecurityScore) {
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
 
-                    val filledSweep = 180f * (score.score / 100f)
+                    val filledSweep = 180f * (score.score / 100f).coerceIn(0f, 1f)
                     val gradientBrush = Brush.horizontalGradient(
                         colors = listOf(
                             Color(0xFFE24B4A),
@@ -438,12 +438,20 @@ fun SecurityScoreCard(score: SecurityScore) {
                 }
 
                 Text(
-                    text = "${score.score}",
+                    text = if (score.score % 1f == 0f) "${score.score.toInt()}" else "%.1f".format(score.score),
                     fontSize = 44.sp,
                     fontWeight = FontWeight.Bold,
                     color = scoreColor
                 )
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = score.verdict,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = scoreColor
+            )
 
             TextButton(
                 onClick = { expanded = !expanded }
