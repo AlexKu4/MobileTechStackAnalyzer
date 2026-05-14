@@ -111,7 +111,7 @@ fun DetailScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Save as HTML") },
+                                text = { Text("Share as HTML") },
                                 onClick = {
                                     showShareMenu = false
                                     shareAsHtml(context, buildHtmlReport(successState.result), successState.result.appName)
@@ -164,7 +164,7 @@ fun DetailScreen(
                                     .format(lastAnalyzedAt!!)
                             }
                             Text(
-                                text = "Из кэша: $dateStr",
+                                text = "Cached: $dateStr",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier
@@ -681,6 +681,20 @@ private fun SecurityFlagRow(label: String, value: Boolean, description: String) 
 private fun PermissionsSection(permissions: List<PermissionInfo>) {
     var grantedFilter by remember { mutableStateOf(GrantedFilter.ALL) }
 
+    val dangerousCategories = remember {
+        setOf(
+            PermissionCategory.CAMERA,
+            PermissionCategory.LOCATION,
+            PermissionCategory.CONTACTS,
+            PermissionCategory.PHONE,
+            PermissionCategory.STORAGE,
+            PermissionCategory.MICROPHONE,
+            PermissionCategory.SMS,
+            PermissionCategory.SENSORS,
+            PermissionCategory.BLUETOOTH,
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -700,6 +714,61 @@ private fun PermissionsSection(permissions: List<PermissionInfo>) {
                     permissions = permissions
                 )
                 HorizontalDivider()
+
+                val allDangerous = permissions.filter { it.category in dangerousCategories }
+                val filteredDangerous = when (grantedFilter) {
+                    GrantedFilter.ALL -> allDangerous
+                    GrantedFilter.GRANTED -> allDangerous.filter { it.granted }
+                    GrantedFilter.NOT_GRANTED -> allDangerous.filter { !it.granted }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Dangerous Permissions",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Text(
+                            text = allDangerous.size.toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+
+                if (filteredDangerous.isEmpty()) {
+                    Text(
+                        text = "None detected",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                } else {
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        filteredDangerous.forEach { permission ->
+                            PermissionItem(permission)
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                Text(
+                    text = "All Permissions",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
                 val filtered = when (grantedFilter) {
                     GrantedFilter.ALL -> permissions
                     GrantedFilter.GRANTED -> permissions.filter { it.granted }
@@ -933,7 +1002,11 @@ fun buildTextReport(result: AnalysisResult): String {
         PermissionCategory.CONTACTS,
         PermissionCategory.PHONE,
         PermissionCategory.STORAGE,
-        PermissionCategory.MICROPHONE
+        PermissionCategory.MICROPHONE,
+        PermissionCategory.SMS,
+        PermissionCategory.CALENDAR,
+        PermissionCategory.SENSORS,
+        PermissionCategory.BLUETOOTH,
     )
     val grantedCount = result.permissions.count { it.granted }
     val notGrantedCount = result.permissions.size - grantedCount
@@ -943,6 +1016,17 @@ fun buildTextReport(result: AnalysisResult): String {
     } else {
         dangerousPerms.joinToString("\n") { it.name.substringAfterLast('.') }
     }
+
+    val permissionsByCategory = result.permissions
+        .groupBy { it.category }
+        .entries
+        .sortedBy { it.key.displayName }
+        .joinToString("\n") { (category, perms) ->
+            val lines = perms.joinToString("\n") { p ->
+                "    ${p.name.substringAfterLast('.')} [${if (p.granted) "granted" else "not granted"}]"
+            }
+            "  ${category.displayName}:\n$lines"
+        }
 
     return buildString {
         appendLine("MobileTechStack Analysis")
@@ -985,6 +1069,9 @@ fun buildTextReport(result: AnalysisResult): String {
         appendLine("Dangerous permissions:")
         appendLine(dangerousSection)
         appendLine()
+        appendLine("All permissions:")
+        appendLine(permissionsByCategory)
+        appendLine()
         appendLine("---")
         append("Analyzed by MobileTechStack")
     }
@@ -1001,7 +1088,11 @@ fun buildHtmlReport(result: AnalysisResult): String {
         PermissionCategory.CONTACTS,
         PermissionCategory.PHONE,
         PermissionCategory.STORAGE,
-        PermissionCategory.MICROPHONE
+        PermissionCategory.MICROPHONE,
+        PermissionCategory.SMS,
+        PermissionCategory.CALENDAR,
+        PermissionCategory.SENSORS,
+        PermissionCategory.BLUETOOTH,
     )
     val grantedCount = result.permissions.count { it.granted }
     val notGrantedCount = result.permissions.size - grantedCount
