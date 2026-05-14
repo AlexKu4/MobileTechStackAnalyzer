@@ -26,16 +26,16 @@ private val ColorRight = Color(0xFFEF5350)
 private class CompareRowDef(val label: String, val extract: (AnalysisResult) -> String)
 
 private val rowDefs = listOf(
-    CompareRowDef("Фреймворк")    { it.frameworkInfo?.type?.displayName ?: it.framework },
-    CompareRowDef("Язык")         { it.languageInfo?.primary?.displayName ?: it.language },
+    CompareRowDef("Framework")    { it.frameworkInfo?.type?.displayName ?: it.framework },
+    CompareRowDef("Language")     { it.languageInfo?.primary?.displayName ?: it.language },
     CompareRowDef("Primary ABI")  { it.primaryAbi },
     CompareRowDef("64-bit")       { if (it.is64Bit) "Yes" else "No" },
-    CompareRowDef("Обфускация")   { if (it.hasObfuscation) "Yes" else "No" },
-    CompareRowDef("Версия")       { it.versionInfo?.versionName ?: "-" },
+    CompareRowDef("Obfuscation")  { if (it.hasObfuscation) "Yes" else "No" },
+    CompareRowDef("Version")      { it.versionInfo?.versionName ?: "-" },
     CompareRowDef("Min SDK")      { it.versionInfo?.minSdkVersion?.toString() ?: "-" },
     CompareRowDef("APK Size")     { it.apkSize.formatSize() },
-    CompareRowDef("Библиотеки")   { it.detectedLibraries.size.toString() },
-    CompareRowDef("Разрешения")   { it.permissions.size.toString() },
+    CompareRowDef("Libraries")    { it.detectedLibraries.size.toString() },
+    CompareRowDef("Permissions")  { it.permissions.size.toString() },
     CompareRowDef("Debuggable")   { if (it.securityFlags?.isDebuggable == true) "Yes" else "No" },
     CompareRowDef("Allow Backup") { if (it.securityFlags?.allowBackup == true) "Yes" else "No" },
 )
@@ -63,10 +63,10 @@ fun CompareScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Сравнение") },
+                title = { Text("Comparison") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -80,7 +80,7 @@ fun CompareScreen(
             hasError -> {
                 val errorMsg = (firstState as? AnalysisState.Error)?.message
                     ?: (secondState as? AnalysisState.Error)?.message
-                    ?: "Ошибка анализа"
+                    ?: "Analysis error"
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -106,7 +106,7 @@ fun CompareScreen(
                 ) {
                     CircularProgressIndicator()
                     Spacer(Modifier.height(16.dp))
-                    Text("Анализ приложений...")
+                    Text("Analyzing apps...")
                 }
             }
             else -> {

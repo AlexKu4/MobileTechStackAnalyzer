@@ -40,10 +40,10 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("История анализов") },
+                title = { Text("Analysis History") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -71,7 +71,7 @@ fun HistoryScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Вы ещё не анализировали ни одного приложения",
+                            text = "No apps analyzed yet",
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -149,7 +149,7 @@ fun HistoryScreen(
                                     TextButton(onClick = {
                                         onAppClick(entry.result.packageName, entry.result.appName)
                                     }) {
-                                        Text("Открыть")
+                                        Text("Open")
                                     }
                                 }
                             }

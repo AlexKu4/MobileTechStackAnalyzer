@@ -55,7 +55,7 @@ fun AppListScreen(
         }
     }
 
-    val title = if (selectionMode) "Выберите два приложения" else "Mobile TechStack"
+    val title = if (selectionMode) "Select Two Apps" else "Mobile TechStack"
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -75,7 +75,7 @@ fun AppListScreen(
 
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Compare, contentDescription = null) },
-                    label = { Text("Сравнение приложений") },
+                    label = { Text("Compare Apps") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -86,7 +86,7 @@ fun AppListScreen(
 
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.History, contentDescription = null) },
-                    label = { Text("История анализов") },
+                    label = { Text("Analysis History") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -140,7 +140,7 @@ fun AppListScreen(
                             }
                         } else if (!selectionMode) {
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Меню")
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
                             }
                         }
                     },
@@ -161,7 +161,7 @@ fun AppListScreen(
                 if (selectionMode && firstPkg != null && secondPkg != null) {
                     ExtendedFloatingActionButton(
                         onClick = { onBothSelected?.invoke(firstPkg!!, firstName!!, secondPkg!!, secondName!!) },
-                        text = { Text("Сравнить") },
+                        text = { Text("Compare") },
                         icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) }
                     )
                 }
