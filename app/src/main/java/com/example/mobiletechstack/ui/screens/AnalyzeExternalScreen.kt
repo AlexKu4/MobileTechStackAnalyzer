@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -176,10 +177,18 @@ private fun IdleContent(
         }
 
         var url by remember { mutableStateOf("") }
+        var isExpanded by remember { mutableStateOf(false) }
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (!isExpanded) Modifier.clickable { isExpanded = true } else Modifier)
+        ) {
+            if (!isExpanded) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = Icons.Default.Link,
                         contentDescription = null,
@@ -196,28 +205,55 @@ private fun IdleContent(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("https://...") },
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Use direct download links from APKPure, F-Droid or GitHub Releases",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { onAnalyzeUrl(url.trim()) },
-                    enabled = url.isNotBlank(),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Analyze")
+            } else {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Link,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            "Download by URL",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { isExpanded = false }) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowUp,
+                                contentDescription = "Collapse",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("https://...") },
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Use direct download links from APKPure, F-Droid or GitHub Releases",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { onAnalyzeUrl(url.trim()) },
+                        enabled = url.isNotBlank(),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Analyze")
+                    }
                 }
             }
         }
