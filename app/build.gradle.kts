@@ -23,35 +23,13 @@ android {
         applicationId = "com.example.mobiletechstack"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "v1.1.0"
+        versionCode = 4
+        versionName = "v1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    /*signingConfigs {
-        create("release") {
-            if (isCI) {
-                storeFile = file("./keystore.jks")
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
-            } else {
-                val keystoreProperties = Properties().apply {
-                    val propsFile = rootProject.file("keystore.properties")
-                    if (propsFile.exists()) {
-                        propsFile.inputStream().use { load(it) }
-                    }
-                }
-                storeFile = file(keystoreProperties.getProperty("KEYSTORE_PATH") ?: "")
-                storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = keystoreProperties.getProperty("KEY_ALIAS") ?: ""
-                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD") ?: ""
-            }
-        }
-    }*/
     buildTypes {
         release {
-            //signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
